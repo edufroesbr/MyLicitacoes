@@ -20,9 +20,13 @@ def deduplicar(editais: Iterable[Edital]) -> list[Edital]:
     for e in editais:
         por_chave[(e.fonte, e.chave_natural)] = e
     entre_fontes: dict[tuple[str, str, object], Edital] = {}
+    sem_cnpj: list[Edital] = []
     for e in por_chave.values():
+        if not e.orgao_cnpj:
+            sem_cnpj.append(e)
+            continue
         k = (e.orgao_cnpj, _norm(e.objeto), e.data_publicacao)
         atual = entre_fontes.get(k)
         if atual is None or (e.fonte == Fonte.PNCP and atual.fonte != Fonte.PNCP):
             entre_fontes[k] = e
-    return list(entre_fontes.values())
+    return list(entre_fontes.values()) + sem_cnpj

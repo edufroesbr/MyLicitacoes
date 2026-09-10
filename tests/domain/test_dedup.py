@@ -26,3 +26,10 @@ def test_dedup_entre_fontes_prefere_pncp():
 
 def test_hash_muda_com_conteudo():
     assert hash_conteudo(_ed(Fonte.PNCP, "k", objeto="A")) != hash_conteudo(_ed(Fonte.PNCP, "k", objeto="B"))
+
+
+def test_sem_cnpj_nao_colapsa_mesmo_objeto_e_data():
+    a = _ed(Fonte.COMPRAS_GOV, "kc-1", objeto="Pregao padrao X", cnpj="")
+    b = _ed(Fonte.COMPRAS_GOV, "kc-2", objeto="Pregao padrao X", cnpj="")
+    out = deduplicar([a, b])
+    assert len(out) == 2  # sem CNPJ nao ha colapso entre fontes
