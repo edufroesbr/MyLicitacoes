@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     database_url: str
     pdf_dir: str
-    pncp_base_url: str = "https://pncp.gov.br/api/consulta"
+    pncp_base_url: str = "https://pncp.gov.br/api"
     compras_base_url: str = "https://dadosabertos.compras.gov.br"
     janela_inicial_dias: int = 7
     score_piso: float = 0.34
