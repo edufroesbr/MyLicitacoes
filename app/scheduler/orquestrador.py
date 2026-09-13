@@ -43,16 +43,22 @@ def executar(session, fontes, classificador, armazenamento, canais,
         fonte = por_nome.get(e.fonte.value)
         if fonte is None:
             continue
-        for arq in fonte.listar_arquivos(e):
-            if not arq.url:
-                continue
-            try:
-                armazenamento.guardar(e, arq, baixar_conteudo(arq.url))
-                res.downloads += 1
-            except Exception:
-                pass  # PDF que falha nao bloqueia o edital
+        try:
+            for arq in fonte.listar_arquivos(e):
+                if not arq.url:
+                    continue
+                try:
+                    armazenamento.guardar(e, arq, baixar_conteudo(arq.url))
+                    res.downloads += 1
+                except Exception:
+                    pass  # PDF que falha nao bloqueia o edital
+        except Exception:
+            pass  # falha ao listar/baixar arquivos de um edital nao bloqueia os outros
 
     digest = montar_digest(fim, relevantes, res.novos, res.downloads, res.fontes_falha, [])
     for canal in canais:
-        canal.enviar(digest)
+        try:
+            canal.enviar(digest)
+        except Exception:
+            pass  # canal em baixo nao impede os restantes
     return res

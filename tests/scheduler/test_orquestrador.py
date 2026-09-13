@@ -61,3 +61,51 @@ def test_fonte_que_cai_nao_derruba_a_outra(monkeypatch):
     assert res.novos == 1
     assert store.guardados == ["k1"]
     assert len(canal.enviados) == 1
+
+
+class FonteArquivosExplode:
+    """Fonte cujo listar_arquivos falha para um edital especifico (ex.: timeout/500 do PNCP)."""
+    nome = "pncp"
+    def __init__(self, editais, chave_que_explode):
+        self._e = editais
+        self._chave_que_explode = chave_que_explode
+    def buscar(self, inicio, fim):
+        return self._e
+    def listar_arquivos(self, e):
+        if e.chave_natural == self._chave_que_explode:
+            raise RuntimeError("timeout pncp")
+        return [ArquivoRef(TipoArquivo.EDITAL, "http://x/edital.pdf", "edital.pdf")]
+
+
+def test_listar_arquivos_que_falha_nao_bloqueia_outro_edital_nem_o_digest(monkeypatch):
+    import app.scheduler.orquestrador as orq
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
+    e1 = _ed(Fonte.PNCP, "k1", "servico de clipping")
+    e2 = Edital(Fonte.PNCP, "k2", "servico de clipping", "Org", "00000000000292", "AM",
+                "Manaus", "Pregao", Decimal("1"), date(2026, 9, 1), None, None, "http://x")
+    fonte = FonteArquivosExplode([e1, e2], chave_que_explode="k1")
+    store, canal = StoreFake(), CanalFake()
+    res = orq.executar(SessionFake(), [fonte], ClassifFake(), store, [canal],
+                       baixar_conteudo=lambda url: b"%PDF", inicio=date(2026, 9, 1),
+                       fim=date(2026, 9, 2), score_piso=0.34)
+    assert res.relevantes == 2
+    assert store.guardados == ["k2"]
+    assert len(canal.enviados) == 1
+
+
+class CanalExplode:
+    def enviar(self, d):
+        raise RuntimeError("smtp fora do ar")
+
+
+def test_canal_que_falha_nao_impede_os_restantes(monkeypatch):
+    import app.scheduler.orquestrador as orq
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
+    boa = FonteFake("pncp", [_ed(Fonte.PNCP, "k1", "servico de clipping")])
+    store, canal_ok = StoreFake(), CanalFake()
+    res = orq.executar(SessionFake(), [boa], ClassifFake(), store, [CanalExplode(), canal_ok],
+                       baixar_conteudo=lambda url: b"%PDF", inicio=date(2026, 9, 1),
+                       fim=date(2026, 9, 2), score_piso=0.34)
+    assert len(canal_ok.enviados) == 1
