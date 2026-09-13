@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,6 +9,14 @@ class Settings(BaseSettings):
 
     database_url: str
     pdf_dir: str = "./pdfs"
+
+    @field_validator("pdf_dir")
+    @classmethod
+    def _ancora_pdf_dir(cls, v: str) -> str:
+        p = Path(v)
+        if not p.is_absolute():
+            p = Path(__file__).resolve().parents[1] / p
+        return str(p.resolve())
     pncp_base_url: str = "https://pncp.gov.br/api"
     compras_base_url: str = "https://dadosabertos.compras.gov.br"
     janela_inicial_dias: int = 7

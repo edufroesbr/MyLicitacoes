@@ -25,12 +25,13 @@ def listar(session=Depends(get_session), uf: str | None = None, modalidade: str 
         from sqlalchemy import or_
         from app.db.models import ProjetoInteresseRow
         proj = session.get(ProjetoInteresseRow, projeto_id)
-        if proj is not None:
-            if proj.palavras_chave:
-                cond.append(or_(*(EditalRow.objeto.ilike(f"%{p}%") for p in proj.palavras_chave)))
-            f = proj.filtros or {}
-            if f.get("uf"): cond.append(EditalRow.uf == f["uf"])
-            if f.get("modalidade"): cond.append(EditalRow.modalidade == f["modalidade"])
+        if proj is None or not proj.ativo:
+            raise HTTPException(404, "projeto nao encontrado")
+        if proj.palavras_chave:
+            cond.append(or_(*(EditalRow.objeto.ilike(f"%{p}%") for p in proj.palavras_chave)))
+        f = proj.filtros or {}
+        if f.get("uf"): cond.append(EditalRow.uf == f["uf"])
+        if f.get("modalidade"): cond.append(EditalRow.modalidade == f["modalidade"])
     total = session.scalar(select(func.count()).select_from(EditalRow).where(*cond))
     rows = session.scalars(select(EditalRow).where(*cond)
                            .order_by(EditalRow.score_relevancia.desc(), EditalRow.data_publicacao.desc())
