@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens copiados do LexFlow
+   (C:\Users\edufr\.gemini\antigravity-ide\scratch\Lex_Flow\frontend\app\globals.css)
+   — so os usados pela caixa: fundo/superficie/texto/acento, radius.
+   Copia de valores, sem import nem referencia ao repo Lex_Flow. */
+:root {
+  --primary: 158 77% 35%;
+  --primary-hover: 158 77% 31%;
+  --primary-foreground: 0 0% 0%;
+  --primary-ink: 158 77% 28%;
+  --background: 210 22% 96%;
+  --foreground: 222 47% 4%;
+  --foreground-muted: 215 18% 38%;
+  --card: 0 0% 100%;
+  --border: 214 32% 85%;
+  --muted: 210 20% 94%;
+  --success: 160 75% 28%;
+  --warning: 32 90% 34%;
+  --danger: 0 72% 45%;
+  --radius: 0.75rem;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
