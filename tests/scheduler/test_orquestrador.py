@@ -39,6 +39,7 @@ class SessionFake:
     def __exit__(self, *a): pass
     def add(self, *a): pass
     def commit(self): pass
+    def rollback(self): pass
     def scalar(self, *a, **k): return None
 
 
@@ -49,7 +50,9 @@ def _ed(fonte, chave, objeto):
 
 def test_fonte_que_cai_nao_derruba_a_outra(monkeypatch):
     import app.scheduler.orquestrador as orq
-    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (
+        {(e.fonte.value, e.chave_natural): 1 for e, sc, h in itens}, len(itens)))
+    monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
     monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
     monkeypatch.setattr(orq, "ultima_captura", lambda s, fonte: None)
     boa = FonteFake("pncp", [_ed(Fonte.PNCP, "k1", "servico de clipping")])
@@ -80,7 +83,9 @@ class FonteArquivosExplode:
 
 def test_listar_arquivos_que_falha_nao_bloqueia_outro_edital_nem_o_digest(monkeypatch):
     import app.scheduler.orquestrador as orq
-    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (
+        {(e.fonte.value, e.chave_natural): 1 for e, sc, h in itens}, len(itens)))
+    monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
     monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
     monkeypatch.setattr(orq, "ultima_captura", lambda s, fonte: None)
     e1 = _ed(Fonte.PNCP, "k1", "servico de clipping")
@@ -103,7 +108,9 @@ class CanalExplode:
 
 def test_canal_que_falha_nao_impede_os_restantes(monkeypatch):
     import app.scheduler.orquestrador as orq
-    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (
+        {(e.fonte.value, e.chave_natural): 1 for e, sc, h in itens}, len(itens)))
+    monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
     monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
     monkeypatch.setattr(orq, "ultima_captura", lambda s, fonte: None)
     boa = FonteFake("pncp", [_ed(Fonte.PNCP, "k1", "servico de clipping")])
@@ -129,7 +136,9 @@ class FonteQueRegistaJanela:
 
 def test_cada_fonte_recebe_a_sua_propria_janela_incremental(monkeypatch):
     import app.scheduler.orquestrador as orq
-    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (
+        {(e.fonte.value, e.chave_natural): 1 for e, sc, h in itens}, len(itens)))
+    monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
     monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
 
     # pncp ja tem captura anterior ate 2026-09-05; compras_gov nunca capturou (usa o fallback)

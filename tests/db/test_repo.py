@@ -22,12 +22,32 @@ def test_upsert_nao_duplica_e_conta():
     with Session() as s:
         e = _ed("k-upsert-1")
         sc = ScoreRelevancia(0.5, ("clipping",))
-        novos, atual = repo.upsert_editais(s, [(e, sc, hash_conteudo(e))])
+        ids, novos = repo.upsert_editais(s, [(e, sc, hash_conteudo(e))])
         s.commit()
-        assert (novos, atual) == (1, 0)
-        novos2, _ = repo.upsert_editais(s, [(e, sc, hash_conteudo(e))])
+        assert novos == 1
+        assert isinstance(ids[(e.fonte.value, e.chave_natural)], int)
+        ids2, novos2 = repo.upsert_editais(s, [(e, sc, hash_conteudo(e))])
         s.commit()
         assert novos2 == 0
+        assert ids2[(e.fonte.value, e.chave_natural)] == ids[(e.fonte.value, e.chave_natural)]
+
+
+def test_upsert_devolve_ids_e_persistir_arquivo():
+    from app.domain.edital import ArquivoRef, TipoArquivo
+    from app.db.models import ArquivoEditalRow
+    Session = make_session(os.environ["MYLIC_DATABASE_URL"])
+    with Session() as s:
+        e = Edital(Fonte.PNCP, "00000000000191-2026-99", "clipping", "Org", "00000000000191",
+                   "AM", "Manaus", "Pregao", Decimal("1"), date(2026, 9, 1), None, None, "http://x")
+        ids, novos = repo.upsert_editais(s, [(e, ScoreRelevancia(0.9, ("clipping",)), hash_conteudo(e))])
+        s.commit()
+        eid = ids[(e.fonte.value, e.chave_natural)]
+        assert isinstance(eid, int)
+        arq = ArquivoRef(TipoArquivo.EDITAL, "http://x/e.pdf", "e.pdf")
+        repo.persistir_arquivo(s, eid, arq, "/tmp/e.pdf", b"%PDF")
+        s.commit()
+        rows = s.query(ArquivoEditalRow).filter_by(edital_id=eid).all()
+        assert len(rows) == 1 and rows[0].hash
 
 
 def test_ultima_captura_ignora_execucao_com_falha():

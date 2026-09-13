@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from app.domain.dedup import deduplicar, hash_conteudo
 from app.domain.digest import montar_digest
-from app.db.repo import upsert_editais, registar_execucao, ultima_captura
+from app.db.repo import upsert_editais, persistir_arquivo, registar_execucao, ultima_captura
 
 
 @dataclass
@@ -38,7 +38,7 @@ def executar(session, fontes, classificador, armazenamento, canais,
 
     editais = deduplicar(capturados)
     com_score = [(e, classificador.classificar(e), hash_conteudo(e)) for e in editais]
-    res.novos, _ = upsert_editais(session, com_score)
+    ids, res.novos = upsert_editais(session, com_score)
     session.commit()
 
     relevantes = [e for e, sc, _ in com_score if sc.valor >= score_piso]
@@ -47,17 +47,19 @@ def executar(session, fontes, classificador, armazenamento, canais,
         fonte = por_nome.get(e.fonte.value)
         if fonte is None:
             continue
+        eid = ids.get((e.fonte.value, e.chave_natural))
         try:
             for arq in fonte.listar_arquivos(e):
                 if not arq.url:
                     continue
-                try:
-                    armazenamento.guardar(e, arq, baixar_conteudo(arq.url))
-                    res.downloads += 1
-                except Exception:
-                    pass  # PDF que falha nao bloqueia o edital
+                conteudo = baixar_conteudo(arq.url)
+                caminho = armazenamento.guardar(e, arq, conteudo)
+                if eid is not None:
+                    persistir_arquivo(session, eid, arq, caminho, conteudo)
+                res.downloads += 1
+            session.commit()
         except Exception:
-            pass  # falha ao listar/baixar arquivos de um edital nao bloqueia os outros
+            session.rollback()  # falha ao listar/baixar arquivos de um edital nao bloqueia os outros
 
     digest = montar_digest(fim, relevantes, res.novos, res.downloads, res.fontes_falha, [])
     for canal in canais:

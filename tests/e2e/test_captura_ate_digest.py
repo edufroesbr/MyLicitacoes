@@ -21,12 +21,15 @@ class SessionFake:
     def __exit__(self, *a): pass
     def add(self, *a): pass
     def commit(self): pass
+    def rollback(self): pass
     def scalar(self, *a, **k): return None
 
 
 def test_captura_ate_digest(monkeypatch):
     import app.scheduler.orquestrador as orq
-    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (len(itens), 0))
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (
+        {(e.fonte.value, e.chave_natural): 1 for e, sc, h in itens}, len(itens)))
+    monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
     monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
     with servidor_fake() as base_url:
         fonte = FontePncp(base_url)
