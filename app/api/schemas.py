@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel
 from app.domain.edital import StatusCaixa
@@ -42,3 +42,16 @@ class EditalDetalhe(EditalResumo):
 
 class MudarStatus(BaseModel):
     status: StatusCaixa
+
+
+class ProjetoIn(BaseModel):
+    nome: str
+    palavras_chave: list[str] = []
+    filtros: dict = {}
+    ativo: bool = True
+
+
+class ProjetoOut(ProjetoIn):
+    id: int
+    criado_em: datetime
+    model_config = {"from_attributes": True}

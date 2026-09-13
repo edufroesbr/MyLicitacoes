@@ -13,13 +13,24 @@ router = APIRouter()
 @router.get("/editais", response_model=Pagina)
 def listar(session=Depends(get_session), uf: str | None = None, modalidade: str | None = None,
            fonte: str | None = None, status: str | None = None, score_min: float = 0.0,
-           q: str | None = None, pagina: int = 1, tamanho: int = Query(50, le=200)):
+           q: str | None = None, projeto_id: int | None = None,
+           pagina: int = 1, tamanho: int = Query(50, le=200)):
     cond = [EditalRow.score_relevancia >= score_min]
     if uf: cond.append(EditalRow.uf == uf)
     if modalidade: cond.append(EditalRow.modalidade == modalidade)
     if fonte: cond.append(EditalRow.fonte == fonte)
     if status: cond.append(EditalRow.status == status)
     if q: cond.append(EditalRow.objeto.ilike(f"%{q}%"))
+    if projeto_id is not None:
+        from sqlalchemy import or_
+        from app.db.models import ProjetoInteresseRow
+        proj = session.get(ProjetoInteresseRow, projeto_id)
+        if proj is not None:
+            if proj.palavras_chave:
+                cond.append(or_(*(EditalRow.objeto.ilike(f"%{p}%") for p in proj.palavras_chave)))
+            f = proj.filtros or {}
+            if f.get("uf"): cond.append(EditalRow.uf == f["uf"])
+            if f.get("modalidade"): cond.append(EditalRow.modalidade == f["modalidade"])
     total = session.scalar(select(func.count()).select_from(EditalRow).where(*cond))
     rows = session.scalars(select(EditalRow).where(*cond)
                            .order_by(EditalRow.score_relevancia.desc(), EditalRow.data_publicacao.desc())
