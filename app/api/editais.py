@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from app.api.deps import get_session
-from app.api.schemas import EditalResumo, Pagina
+from app.api.schemas import EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
 from app.db.models import EditalRow
 
 router = APIRouter()
@@ -23,3 +23,27 @@ def listar(session=Depends(get_session), uf: str | None = None, modalidade: str 
                            .offset((pagina - 1) * tamanho).limit(tamanho)).all()
     return Pagina(itens=[EditalResumo.model_validate(r) for r in rows],
                   total=total or 0, pagina=pagina, tamanho=tamanho)
+
+
+@router.get("/editais/{edital_id}", response_model=EditalDetalhe)
+def detalhe(edital_id: int, session=Depends(get_session)):
+    row = session.get(EditalRow, edital_id)
+    if row is None:
+        raise HTTPException(404, "edital nao encontrado")
+    return _detalhe(row)
+
+
+@router.patch("/editais/{edital_id}", response_model=EditalDetalhe)
+def mudar_status(edital_id: int, body: MudarStatus, session=Depends(get_session)):
+    row = session.get(EditalRow, edital_id)
+    if row is None:
+        raise HTTPException(404, "edital nao encontrado")
+    row.status = body.status.value
+    session.commit()
+    return _detalhe(row)
+
+
+def _detalhe(row):
+    d = EditalDetalhe.model_validate(row)
+    d.arquivos = [ArquivoResumo.model_validate(a) for a in row.arquivos]
+    return d

@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from pydantic import BaseModel
+from app.domain.edital import StatusCaixa
 
 
 class EditalResumo(BaseModel):
@@ -23,3 +24,21 @@ class Pagina(BaseModel):
     total: int
     pagina: int
     tamanho: int
+
+
+class ArquivoResumo(BaseModel):
+    id: int
+    tipo: str
+    model_config = {"from_attributes": True}
+
+
+class EditalDetalhe(EditalResumo):
+    orgao_cnpj: str
+    municipio: str | None
+    motivo_relevancia: str
+    url_origem: str
+    arquivos: list[ArquivoResumo] = []
+
+
+class MudarStatus(BaseModel):
+    status: StatusCaixa
