@@ -1,8 +1,11 @@
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from sqlalchemy import select, func
 from app.api.deps import get_session
 from app.api.schemas import EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
-from app.db.models import EditalRow
+from app.config import Settings
+from app.db.models import EditalRow, ArquivoEditalRow
 
 router = APIRouter()
 
@@ -47,3 +50,15 @@ def _detalhe(row):
     d = EditalDetalhe.model_validate(row)
     d.arquivos = [ArquivoResumo.model_validate(a) for a in row.arquivos]
     return d
+
+
+@router.get("/editais/{edital_id}/arquivo/{arquivo_id}")
+def servir_arquivo(edital_id: int, arquivo_id: int, session=Depends(get_session)):
+    a = session.get(ArquivoEditalRow, arquivo_id)
+    if a is None or a.edital_id != edital_id:
+        raise HTTPException(404, "arquivo nao encontrado")
+    base = Path(Settings().pdf_dir).resolve()
+    caminho = Path(a.caminho_local).resolve()
+    if base not in caminho.parents or not caminho.is_file():
+        raise HTTPException(404, "arquivo indisponivel")
+    return FileResponse(caminho, media_type="application/pdf", filename=caminho.name)
