@@ -29,3 +29,11 @@ def test_lista_filtra_por_uf_e_busca():
     assert any("clipping" in o for o in objs) and all("merenda" not in o for o in objs)
     r2 = c.get("/editais", params={"q": "clipping"})
     assert any("clipping" in e["objeto"] for e in r2.json()["itens"])
+
+
+def test_paginacao_invalida_devolve_422():
+    from app.api.main import app
+    c = TestClient(app)
+    assert c.get("/editais", params={"pagina": 0}).status_code == 422
+    assert c.get("/editais", params={"pagina": -1}).status_code == 422
+    assert c.get("/editais", params={"tamanho": -5}).status_code == 422

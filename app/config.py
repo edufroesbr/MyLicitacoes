@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="MYLIC_", env_file=".env", extra="ignore")
 
     database_url: str
-    pdf_dir: str
+    pdf_dir: str = "./pdfs"
     pncp_base_url: str = "https://pncp.gov.br/api"
     compras_base_url: str = "https://dadosabertos.compras.gov.br"
     janela_inicial_dias: int = 7

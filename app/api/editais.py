@@ -14,7 +14,7 @@ router = APIRouter()
 def listar(session=Depends(get_session), uf: str | None = None, modalidade: str | None = None,
            fonte: str | None = None, status: str | None = None, score_min: float = 0.0,
            q: str | None = None, projeto_id: int | None = None,
-           pagina: int = 1, tamanho: int = Query(50, le=200)):
+           pagina: int = Query(1, ge=1), tamanho: int = Query(50, ge=1, le=200)):
     cond = [EditalRow.score_relevancia >= score_min]
     if uf: cond.append(EditalRow.uf == uf)
     if modalidade: cond.append(EditalRow.modalidade == modalidade)
