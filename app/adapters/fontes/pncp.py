@@ -10,7 +10,10 @@ MODALIDADES = (6, 7, 8, 9, 12)  # confirmado: modalidadeId=8 (Dispensa) no fixtu
 def _d(s: str | None) -> date | None:
     if not s:
         return None
-    return datetime.fromisoformat(str(s).replace("Z", "+00:00")).date()
+    try:
+        return datetime.fromisoformat(str(s).replace("Z", "+00:00")).date()
+    except (ValueError, TypeError):
+        return None
 
 
 def _parse_item(item: dict) -> Edital:
@@ -57,22 +60,29 @@ class FontePncp:
         di, df = inicio.strftime("%Y%m%d"), fim.strftime("%Y%m%d")
         with make_client(self._base_url) as c:
             for mod in MODALIDADES:
-                pagina = 1
-                while True:
-                    r = c.get("/consulta/v1/contratacoes/publicacao", params={
-                        "dataInicial": di, "dataFinal": df,
-                        "codigoModalidadeContratacao": mod,
-                        "pagina": pagina, "tamanhoPagina": 500,
-                    })
-                    if r.status_code == 204:
-                        break
-                    r.raise_for_status()
-                    body = r.json()
-                    itens = body.get("data") or []
-                    out.extend(_parse_item(i) for i in itens)
-                    if pagina >= int(body.get("totalPaginas") or 1):
-                        break
-                    pagina += 1
+                try:
+                    pagina = 1
+                    while True:
+                        r = c.get("/consulta/v1/contratacoes/publicacao", params={
+                            "dataInicial": di, "dataFinal": df,
+                            "codigoModalidadeContratacao": mod,
+                            "pagina": pagina, "tamanhoPagina": 500,
+                        })
+                        if r.status_code == 204:
+                            break
+                        r.raise_for_status()
+                        body = r.json()
+                        itens = body.get("data") or []
+                        for i in itens:
+                            try:
+                                out.append(_parse_item(i))
+                            except Exception:
+                                pass  # item malformado nao aborta a fonte
+                        if pagina >= int(body.get("totalPaginas") or 1):
+                            break
+                        pagina += 1
+                except Exception:
+                    pass  # modalidade com erro (ex.: 400) nao derruba as restantes
         return out
 
     def listar_arquivos(self, e: Edital) -> list[ArquivoRef]:
