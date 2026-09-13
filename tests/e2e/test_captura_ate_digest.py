@@ -33,7 +33,7 @@ def test_captura_ate_digest(monkeypatch):
         store, canal = StoreFake(), CanalFake()
         res = orq.executar(SessionFake(), [fonte], KeywordClassificador(LEXICO_TIPO_LEXFLOW),
                            store, [canal], baixar_conteudo=lambda url: b"%PDF",
-                           inicio=date(2026, 9, 1), fim=date(2026, 9, 2), score_piso=0.05)
+                           janela_inicial_dias=1, score_piso=0.05, hoje=date(2026, 9, 2))
     assert res.novos >= 1
     assert res.relevantes >= 1
     assert store.n >= 1

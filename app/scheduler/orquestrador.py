@@ -1,10 +1,10 @@
 # app/scheduler/orquestrador.py
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from app.domain.dedup import deduplicar, hash_conteudo
 from app.domain.digest import montar_digest
-from app.db.repo import upsert_editais, registar_execucao
+from app.db.repo import upsert_editais, registar_execucao, ultima_captura
 
 
 @dataclass
@@ -16,12 +16,16 @@ class Resultado:
 
 
 def executar(session, fontes, classificador, armazenamento, canais,
-             baixar_conteudo: Callable[[str], bytes], inicio: date, fim: date,
-             score_piso: float) -> Resultado:
+             baixar_conteudo: Callable[[str], bytes], janela_inicial_dias: int,
+             score_piso: float, hoje: date | None = None) -> Resultado:
+    hoje = hoje or date.today()
     res = Resultado()
     capturados = []
     por_nome = {}
     for f in fontes:
+        uc = ultima_captura(session, f.nome)
+        inicio = uc.date() if uc else hoje - timedelta(days=janela_inicial_dias)
+        fim = hoje
         try:
             editais = f.buscar(inicio, fim)
             capturados.extend(editais)
