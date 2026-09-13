@@ -1,4 +1,5 @@
 # app/adapters/notificacao/render.py
+import html
 from app.domain.digest import Digest
 
 
@@ -15,8 +16,13 @@ def render_texto(d: Digest) -> str:
 
 
 def render_html(d: Digest) -> str:
-    itens = "".join(f"<li>{e.objeto[:120]} — <b>{e.orgao_nome}</b> ({e.uf or ''})</li>" for e in d.destaques)
-    projetos = "".join(f"<li>{p.nome}: {p.novos} novos, {p.prazo_a_fechar} a fechar</li>" for p in d.projetos)
+    itens = "".join(
+        f"<li>{html.escape(e.objeto[:120])} — <b>{html.escape(e.orgao_nome)}</b> "
+        f"({html.escape(e.uf or '')})</li>"
+        for e in d.destaques)
+    projetos = "".join(
+        f"<li>{html.escape(p.nome)}: {p.novos} novos, {p.prazo_a_fechar} a fechar</li>"
+        for p in d.projetos)
     falha = f"<p>Fontes com falha: {', '.join(d.fontes_com_falha)}</p>" if d.fontes_com_falha else ""
     return (f"<h2>Radar de Editais — {d.data_ref.isoformat()}</h2>"
             f"<p>Novos: {d.total_novos} | Relevantes: {d.total_relevantes} | Downloads: {d.total_downloads}</p>"

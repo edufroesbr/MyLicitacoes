@@ -1,6 +1,8 @@
 # tests/adapters/test_notificacao.py
 from datetime import date
-from app.domain.digest import Digest
+from decimal import Decimal
+from app.domain.digest import Digest, LinhaProjeto
+from app.domain.edital import Edital, Fonte
 from app.adapters.notificacao.render import render_html, render_texto
 from app.adapters.notificacao.telegram import TelegramDigest
 
@@ -12,6 +14,19 @@ def _digest():
 def test_render_html_tem_totais():
     html = render_html(_digest())
     assert "40" in html and "compras_gov" in html
+
+
+def test_render_html_escapa_campos_externos():
+    edital_malicioso = Edital(
+        Fonte.PNCP, "k1", '<script>&"alert"</script>', "<b>Orgao</b>",
+        "00000000000191", "<i>AM</i>", "Manaus", "Pregao", Decimal("1"),
+        date(2026, 9, 1), None, None, "http://x")
+    d = Digest(date(2026, 9, 1), 1, 1, 0, (), (edital_malicioso,),
+               (LinhaProjeto("<script>proj</script>", 1, 0),))
+    html = render_html(d)
+    assert "<script>" not in html
+    assert "&lt;script&gt;" in html
+    assert "&amp;" in html
 
 
 def test_render_texto_nao_quebra_sem_destaques():
