@@ -4,3 +4,6 @@ node_modules/
 test-results/
 playwright-report/
 *.tsbuildinfo
+# gerados pelo `next dev` do Next 16 (agentRules) — nao versionar
+/AGENTS.md
+/CLAUDE.md
