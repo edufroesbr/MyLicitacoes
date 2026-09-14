@@ -1,0 +1,15 @@
+[importlinter]
+root_package = app
+include_external_packages = True
+
+[importlinter:contract:forbidden-domain]
+name = Dominio nao depende de framework nem adapters
+type = forbidden
+source_modules = app.domain
+forbidden_modules =
+    sqlalchemy
+    httpx
+    fastapi
+    pydantic
+    app.adapters
+    app.db

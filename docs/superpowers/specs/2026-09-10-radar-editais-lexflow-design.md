@@ -40,15 +40,17 @@ LexFlow vende. O produto existe para **encontrar oportunidades de venda**.
 ## 3. Fontes públicas (engenharia reversa)
 
 ### 3.1 PNCP — fonte primária obrigatória
-Base: `https://pncp.gov.br/api/consulta` (consulta pública, **sem auth**).
+Raiz: `https://pncp.gov.br/api` (consulta pública, **sem auth**). ⚠️ **Confirmado na
+implementação (Task 8):** a consulta vive sob `/consulta/...` e os arquivos sob
+`/pncp/...` — **raízes diferentes**. Não assumir uma base única `/api/consulta`.
 
 - **Consulta por data de publicação:**
-  `GET /v1/contratacoes/publicacao?dataInicial=AAAAMMDD&dataFinal=AAAAMMDD&codigoModalidadeContratacao={int}&pagina={int}&tamanhoPagina={<=500}`
+  `GET /consulta/v1/contratacoes/publicacao?dataInicial=AAAAMMDD&dataFinal=AAAAMMDD&codigoModalidadeContratacao={int}&pagina={int}&tamanhoPagina={<=500}`
   Opcionais: `uf`, `codigoMunicipioIbge`, `cnpj`, `codigoModoDisputa`.
   Resposta paginada: `totalRegistros`, `totalPaginas`, `numeroPagina`.
-- **Propostas em aberto:** `GET /v1/contratacoes/proposta?dataFinal&codigoModalidadeContratacao&pagina`.
+- **Propostas em aberto:** `GET /consulta/v1/contratacoes/proposta?dataFinal&codigoModalidadeContratacao&pagina`.
 - **Download de documentos:**
-  `GET /v1/orgaos/{cnpj}/compras/{ano}/{sequencial}/arquivos` -> lista
+  `GET /pncp/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}/arquivos` -> lista
   Edital / Termo de Referência / ETP / Projeto Básico com **URL de download**.
 - **Chave natural do edital:** `cnpj_orgao + ano + sequencial`.
 - Toda contratação da Lei 14.133 passa aqui -> é a espinha da captura.
