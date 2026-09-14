@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { obterEdital, urlArquivo } from "@/lib/api";
 import type { EditalDetalhe, StatusCaixa } from "@/lib/types";
 import { BadgePrazo, BadgeScore } from "@/components/Badge";
 import AcoesStatus from "@/components/AcoesStatus";
 
-export default function DetalheEditalPage({ params }: { params: { id: string } }) {
-  const editalId = Number(params.id);
+export default function DetalheEditalPage({ params }: { params: Promise<{ id: string }> }) {
+  const editalId = Number(use(params).id);
   const [edital, setEdital] = useState<EditalDetalhe | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
