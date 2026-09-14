@@ -10,6 +10,12 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
+    {
+      // Sem PW_CHANNEL usa o chromium empacotado (correto no CI, apos
+      // `npx playwright install chromium`); define PW_CHANNEL=chrome para
+      // usar o Chrome de sistema localmente.
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], channel: process.env.PW_CHANNEL || undefined },
+    },
   ],
 });

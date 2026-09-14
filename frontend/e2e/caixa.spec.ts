@@ -15,5 +15,5 @@ test("caixa lista, abre detalhe e muda status", async ({ page }) => {
   await page.getByText(/clipping/i).first().click();
   await expect(page).toHaveURL(/\/editais\/\d+/);
   await page.getByRole("button", { name: /oportunidade/i }).click();
-  await expect(page.getByText(/oportunidade/i).first()).toBeVisible();
+  await expect(page.getByTestId("status-atual")).toHaveText(/oportunidade/i);
 });

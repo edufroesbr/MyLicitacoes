@@ -51,7 +51,10 @@ export default function DetalheEditalPage({ params }: { params: { id: string } }
             <div className="flex items-center gap-2">
               <BadgeScore score={edital.score_relevancia} />
               <BadgePrazo dataFim={edital.data_fim_propostas} />
-              <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-foreground-muted">
+              <span
+                data-testid="status-atual"
+                className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-foreground-muted"
+              >
                 {edital.status}
               </span>
             </div>
