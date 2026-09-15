@@ -5,6 +5,7 @@ from app.adapters.http_client import make_client
 from app.domain.edital import Edital, Fonte, ArquivoRef, TipoArquivo
 
 MODALIDADES = (6, 7, 8, 9, 12)  # confirmado: modalidadeId=8 (Dispensa) no fixture real
+TAMANHO_PAGINA = 50  # maximo aceite pelo PNCP (500 devolve 400 "Tamanho de pagina invalido")
 
 
 def _d(s: str | None) -> date | None:
@@ -58,6 +59,8 @@ class FontePncp:
     def buscar(self, inicio: date, fim: date) -> list[Edital]:
         out: list[Edital] = []
         di, df = inicio.strftime("%Y%m%d"), fim.strftime("%Y%m%d")
+        sucessos = 0
+        ultimo_erro: Exception | None = None
         with make_client(self._base_url) as c:
             for mod in MODALIDADES:
                 try:
@@ -66,7 +69,8 @@ class FontePncp:
                         r = c.get("/consulta/v1/contratacoes/publicacao", params={
                             "dataInicial": di, "dataFinal": df,
                             "codigoModalidadeContratacao": mod,
-                            "pagina": pagina, "tamanhoPagina": 500,
+                            # PNCP rejeita tamanhoPagina > 50 (400 "Tamanho de pagina invalido").
+                            "pagina": pagina, "tamanhoPagina": TAMANHO_PAGINA,
                         })
                         if r.status_code == 204:
                             break
@@ -81,8 +85,12 @@ class FontePncp:
                         if pagina >= int(body.get("totalPaginas") or 1):
                             break
                         pagina += 1
-                except Exception:
-                    pass  # modalidade com erro (ex.: 400) nao derruba as restantes
+                    sucessos += 1
+                except Exception as exc:
+                    ultimo_erro = exc  # modalidade com erro nao derruba as restantes...
+        # ...mas se TODAS falharam, a fonte falhou — nao devolver 0 em silencio.
+        if sucessos == 0 and ultimo_erro is not None:
+            raise ultimo_erro
         return out
 
     def listar_arquivos(self, e: Edital) -> list[ArquivoRef]:
