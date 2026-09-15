@@ -4,7 +4,7 @@ import certifi
 import httpx
 
 
-def make_client(base_url: str, timeout: float = 30.0) -> httpx.Client:
+def make_client(base_url: str, timeout: float = 90.0) -> httpx.Client:  # PNCP e lento sob carga
     ctx = ssl.create_default_context(cafile=certifi.where())
     transport = httpx.HTTPTransport(retries=3, verify=ctx)
     return httpx.Client(base_url=base_url, timeout=timeout,
