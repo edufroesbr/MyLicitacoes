@@ -17,7 +17,8 @@ interface Props {
   onCancelar: () => void;
 }
 
-const campoCls = "rounded border border-border bg-background px-2 py-1 text-sm text-foreground";
+const campoCls =
+  "rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition-colors hover:border-foreground-muted/40";
 
 export default function ProjetoForm({ projeto, salvando, onSalvar, onCancelar }: Props) {
   const [nome, setNome] = useState(projeto?.nome ?? "");
@@ -49,7 +50,7 @@ export default function ProjetoForm({ projeto, salvando, onSalvar, onCancelar }:
   return (
     <form
       onSubmit={submeter}
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
+      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-card"
     >
       <label className="flex flex-col gap-1 text-sm text-foreground-muted">
         Nome
@@ -67,7 +68,7 @@ export default function ProjetoForm({ projeto, salvando, onSalvar, onCancelar }:
         <label className="flex flex-1 flex-col gap-1 text-sm text-foreground-muted">
           UF
           <input
-            className={campoCls}
+            className={`${campoCls} uppercase`}
             maxLength={2}
             value={uf}
             onChange={(e) => setUf(e.target.value.toUpperCase())}
@@ -79,18 +80,27 @@ export default function ProjetoForm({ projeto, salvando, onSalvar, onCancelar }:
         </label>
       </div>
       <label className="flex items-center gap-2 text-sm text-foreground-muted">
-        <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
+        <input
+          type="checkbox"
+          className="h-4 w-4 rounded border-border accent-[hsl(var(--primary))]"
+          checked={ativo}
+          onChange={(e) => setAtivo(e.target.checked)}
+        />
         Ativo
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           disabled={salvando}
         >
           {salvando ? "A guardar..." : "Guardar"}
         </button>
-        <button type="button" className="rounded border border-border px-3 py-1 text-sm" onClick={onCancelar}>
+        <button
+          type="button"
+          className="rounded-md border border-border bg-card px-4 py-1.5 text-sm transition-colors hover:bg-muted"
+          onClick={onCancelar}
+        >
           Cancelar
         </button>
       </div>

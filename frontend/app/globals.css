@@ -2,28 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tokens copiados do LexFlow
-   (C:\Users\edufr\.gemini\antigravity-ide\scratch\Lex_Flow\frontend\app\globals.css)
-   — so os usados pela caixa: fundo/superficie/texto/acento, radius.
-   Copia de valores, sem import nem referencia ao repo Lex_Flow. */
+/* Mundo visual "institucional sobrio juridico" — claro, papel quente, tinta navy,
+   titulos em serif de display. Committed a um unico modo (ferramenta de operador). */
 :root {
-  --primary: 158 77% 35%;
-  --primary-hover: 158 77% 31%;
-  --primary-foreground: 0 0% 0%;
-  --primary-ink: 158 77% 28%;
-  --background: 210 22% 96%;
-  --foreground: 222 47% 4%;
-  --foreground-muted: 215 18% 38%;
-  --card: 0 0% 100%;
-  --border: 214 32% 85%;
-  --muted: 210 20% 94%;
-  --success: 160 75% 28%;
-  --warning: 32 90% 34%;
-  --danger: 0 72% 45%;
-  --radius: 0.75rem;
+  --background: 40 33% 96%; /* papel quente */
+  --surface: 42 40% 98%; /* faixas/superficies elevadas */
+  --card: 40 33% 99.5%;
+  --foreground: 216 42% 13%; /* tinta navy quase-preta */
+  --foreground-muted: 216 16% 40%; /* tintado do navy, nunca cinza puro (>=4.5:1 no papel) */
+  --border: 40 22% 87%;
+  --muted: 40 26% 92%; /* hover / faixas */
+  --primary: 212 54% 25%; /* navy profundo */
+  --primary-hover: 212 54% 20%;
+  --primary-foreground: 42 40% 97%;
+  --primary-ink: 212 54% 30%; /* navy para links/texto sobre papel */
+  --accent: 36 44% 42%; /* bronze/selo juridico */
+  --score-high: 158 42% 30%; /* verde sobrio */
+  --score-mid: 36 46% 40%; /* bronze */
+  --score-low: 216 12% 52%;
+  --success: 158 42% 30%;
+  --warning: 36 60% 38%;
+  --danger: 8 56% 44%; /* terracota refinada */
+  --ring: 212 60% 42%;
+  --radius: 0.625rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: hsl(var(--background));
+  background:
+    radial-gradient(120% 60% at 50% -10%, hsl(42 44% 98%) 0%, transparent 60%),
+    hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: var(--font-sans), "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+
+/* Superficies do browser que "ninguem desenha" mas carregam o design */
+::selection {
+  background: hsl(var(--primary) / 0.16);
+  color: hsl(var(--foreground));
+}
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+* {
+  caret-color: hsl(var(--primary));
+}
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(216 16% 40% / 0.35);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(216 16% 40% / 0.55);
+  background-clip: padding-box;
+}
+
+/* Numeros de dados (valores, datas, scores) alinham em tabular */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-rise {
+    animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
 }

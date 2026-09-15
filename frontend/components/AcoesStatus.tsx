@@ -39,7 +39,7 @@ export default function AcoesStatus({ editalId, statusAtual, onMudou }: Props) {
         {ACOES.map((a) => (
           <button
             key={a.status}
-            className="rounded border border-border px-3 py-1 text-sm disabled:opacity-50"
+            className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
             disabled={statusAtual === a.status || processando !== null}
             onClick={() => acionar(a.status)}
           >

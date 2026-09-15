@@ -37,57 +37,99 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <Link href="/caixa" className="text-sm text-primary-ink hover:underline">
-        &larr; Voltar a caixa
+    <main className="mx-auto max-w-3xl px-6 py-8">
+      <Link
+        href="/caixa"
+        className="inline-flex items-center gap-1.5 text-sm text-primary-ink hover:underline"
+      >
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Voltar a caixa
       </Link>
 
-      {carregando && <p className="mt-4 text-foreground-muted">A carregar...</p>}
-      {erro && <p className="mt-4 text-danger">Erro ao carregar edital: {erro}</p>}
+      {carregando && (
+        <div className="mt-5 overflow-hidden rounded-lg border border-border bg-card p-5 shadow-card">
+          <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+          <div className="mt-3 h-6 w-3/4 animate-pulse rounded bg-muted" />
+          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-muted/70" />
+        </div>
+      )}
+
+      {erro && (
+        <div className="mt-5 rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+          Erro ao carregar edital: {erro}
+        </div>
+      )}
 
       {!carregando && !erro && edital && (
-        <article className="mt-4 flex flex-col gap-4">
+        <article className="anim-rise mt-5 flex flex-col gap-5">
           <header className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <BadgeScore score={edital.score_relevancia} />
               <BadgePrazo dataFim={edital.data_fim_propostas} />
               <span
                 data-testid="status-atual"
-                className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-foreground-muted"
+                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground-muted"
               >
                 {edital.status}
               </span>
             </div>
-            <h1 className="text-xl font-semibold text-foreground">{edital.objeto}</h1>
+            <h1 className="font-display text-3xl font-semibold tracking-tightest text-foreground">
+              {edital.objeto}
+            </h1>
             <p className="text-sm text-foreground-muted">{edital.motivo_relevancia}</p>
           </header>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-border bg-card p-4 text-sm">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border border-border bg-card p-5 text-sm shadow-card">
             <dt className="text-foreground-muted">Orgao</dt>
-            <dd>{edital.orgao_nome}</dd>
+            <dd className="text-foreground">{edital.orgao_nome}</dd>
             <dt className="text-foreground-muted">CNPJ</dt>
-            <dd>{edital.orgao_cnpj}</dd>
+            <dd className="tnum text-foreground">{edital.orgao_cnpj}</dd>
             <dt className="text-foreground-muted">UF / Municipio</dt>
-            <dd>{edital.uf ?? "—"} / {edital.municipio ?? "—"}</dd>
+            <dd className="text-foreground">
+              {edital.uf ?? "—"} / {edital.municipio ?? "—"}
+            </dd>
             <dt className="text-foreground-muted">Modalidade</dt>
-            <dd>{edital.modalidade ?? "—"}</dd>
+            <dd className="text-foreground">{edital.modalidade ?? "—"}</dd>
             <dt className="text-foreground-muted">Valor estimado</dt>
-            <dd>{edital.valor_estimado ?? "—"}</dd>
+            <dd className="tnum text-foreground">{edital.valor_estimado ?? "—"}</dd>
             <dt className="text-foreground-muted">Publicacao</dt>
-            <dd>{edital.data_publicacao ?? "—"}</dd>
+            <dd className="tnum text-foreground">{edital.data_publicacao ?? "—"}</dd>
             <dt className="text-foreground-muted">Fim das propostas</dt>
-            <dd>{edital.data_fim_propostas ?? "—"}</dd>
+            <dd className="tnum text-foreground">{edital.data_fim_propostas ?? "—"}</dd>
             <dt className="text-foreground-muted">Fonte</dt>
-            <dd>{edital.fonte}</dd>
+            <dd className="text-foreground">{edital.fonte}</dd>
           </dl>
 
           <a
             href={edital.url_origem}
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-primary-ink hover:underline"
+            className="inline-flex w-fit items-center gap-1.5 text-sm text-primary-ink hover:underline"
           >
-            Ver na fonte original &rarr;
+            Ver na fonte original
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
           </a>
 
           <section>
@@ -95,20 +137,34 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
             {edital.arquivos.length === 0 && (
               <p className="text-sm text-foreground-muted">Nenhum arquivo capturado.</p>
             )}
-            <ul className="flex flex-col gap-1">
-              {edital.arquivos.map((arquivo) => (
-                <li key={arquivo.id}>
-                  <a
-                    href={urlArquivo(edital.id, arquivo.id)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary-ink hover:underline"
-                  >
-                    {arquivo.tipo} (arquivo #{arquivo.id})
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {edital.arquivos.length > 0 && (
+              <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
+                {edital.arquivos.map((arquivo) => (
+                  <li key={arquivo.id} className="border-b border-border last:border-0">
+                    <a
+                      href={urlArquivo(edital.id, arquivo.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 p-3 text-sm text-primary-ink transition-colors hover:bg-muted/50"
+                    >
+                      <svg
+                        aria-hidden
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4 shrink-0 text-foreground-muted"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M14 3v5h5M6 3h8l5 5v13H6z" />
+                      </svg>
+                      {arquivo.tipo} (arquivo #{arquivo.id})
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <AcoesStatus editalId={edital.id} statusAtual={edital.status} onMudou={aoMudarStatus} />
