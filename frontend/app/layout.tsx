@@ -1,39 +1,26 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import NavBar from "@/components/NavBar";
+
+const display = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "MyLicitacoes",
-  description: "Radar de editais",
+  title: "MyLicitacoes — Radar de Editais",
+  description: "Radar de editais de licitacao tipo-LexFlow",
 };
 
-const LINKS_NAV = [
-  { href: "/caixa", rotulo: "Caixa" },
-  { href: "/digest", rotulo: "Digest" },
-  { href: "/projetos", rotulo: "Projetos" },
-];
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${display.variable} ${sans.variable}`}>
       <body>
-        <nav className="border-b border-border bg-card px-6 py-3">
-          <div className="mx-auto flex max-w-3xl gap-4">
-            {LINKS_NAV.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-foreground-muted hover:text-primary-ink"
-              >
-                {link.rotulo}
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <NavBar />
         {children}
       </body>
     </html>
