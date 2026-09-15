@@ -3,6 +3,7 @@ import json
 from datetime import date
 from pathlib import Path
 import httpx
+import pytest
 from app.adapters.fontes import pncp as pncp_mod
 from app.adapters.fontes.pncp import _parse_item, _d
 from app.domain.edital import Edital, Fonte
@@ -60,3 +61,32 @@ def test_buscar_pula_modalidade_com_erro_mas_continua_as_outras(monkeypatch):
     fonte = pncp_mod.FontePncp("http://fake")
     out = fonte.buscar(date(2026, 9, 1), date(2026, 9, 2))
     assert len(out) == len(pncp_mod.MODALIDADES) - 1
+
+
+def test_buscar_usa_tamanho_pagina_50(monkeypatch):
+    """Regressao: PNCP rejeita tamanhoPagina>50 com 400 'Tamanho de pagina invalido'."""
+    vistos: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        vistos.append(int(request.url.params.get("tamanhoPagina")))
+        return httpx.Response(200, json={"data": [], "totalPaginas": 1})
+
+    monkeypatch.setattr(pncp_mod, "make_client", _client_falso(handler))
+    fonte = pncp_mod.FontePncp("http://fake")
+    fonte.buscar(date(2025, 9, 14), date(2025, 9, 15))
+
+    assert vistos, "nenhum request chegou a /consulta/v1/contratacoes/publicacao"
+    assert all(v == 50 for v in vistos)
+    assert len(vistos) == len(pncp_mod.MODALIDADES)
+
+
+def test_buscar_levanta_se_todas_as_modalidades_falharem(monkeypatch):
+    """Regressao: 0 sucessos nao pode devolver [] em silencio — tem de levantar."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400)
+
+    monkeypatch.setattr(pncp_mod, "make_client", _client_falso(handler))
+    fonte = pncp_mod.FontePncp("http://fake")
+    with pytest.raises(httpx.HTTPStatusError):
+        fonte.buscar(date(2025, 9, 14), date(2025, 9, 15))
