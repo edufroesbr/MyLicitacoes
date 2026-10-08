@@ -34,7 +34,7 @@ def main() -> None:
                        ArmazenamentoDisco(s.pdf_dir), canais, baixar,
                        s.janela_inicial_dias, s.score_piso)
     print(f"novos={res.novos} relevantes={res.relevantes} downloads={res.downloads} "
-          f"fontes_falha={res.fontes_falha}")
+          f"fontes_falha={res.fontes_falha} fontes_zero={res.fontes_zero}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,13 @@
 services:
   postgres:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: mylic
       POSTGRES_PASSWORD: mylic
       POSTGRES_DB: mylic
     ports: ["5433:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+
+volumes:
+  postgres_data:
