@@ -6,13 +6,13 @@ const pill =
 export function BadgeScore({ score }: { score: number }) {
   const tier =
     score >= 0.67
-      ? { cls: "bg-score-high/12 text-score-high", Icone: CheckCircle2 }
+      ? { cls: "bg-score-high/12 text-score-high", iconCls: "", Icone: CheckCircle2 }
       : score >= 0.34
-        ? { cls: "bg-score-mid/14 text-score-mid", Icone: CircleDot }
-        : { cls: "bg-muted text-foreground-muted", Icone: MinusCircle };
+        ? { cls: "bg-score-mid/14 text-score-mid", iconCls: "", Icone: CircleDot }
+        : { cls: "bg-muted text-foreground-muted", iconCls: "text-score-low", Icone: MinusCircle };
   return (
     <span className={`${pill} ${tier.cls}`} title="Relevancia tipo-LexFlow">
-      <tier.Icone aria-hidden className="h-3 w-3" strokeWidth={2} />
+      <tier.Icone aria-hidden className={`h-3 w-3 ${tier.iconCls}`} strokeWidth={2} />
       {Math.round(score * 100)}%
     </span>
   );

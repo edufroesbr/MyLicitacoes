@@ -39,8 +39,8 @@ const config: Config = {
         lg: "calc(var(--radius) + 0.25rem)",
       },
       boxShadow: {
-        card: "0 1px 2px hsl(216 42% 13% / 0.05), 0 14px 30px -18px hsl(216 42% 13% / 0.20)",
-        lift: "0 2px 4px hsl(216 42% 13% / 0.06), 0 22px 44px -22px hsl(216 42% 13% / 0.28)",
+        card: "0 1px 2px hsl(20 22% 16% / 0.05), 0 14px 30px -18px hsl(20 22% 16% / 0.20)",
+        lift: "0 2px 4px hsl(20 22% 16% / 0.06), 0 22px 44px -22px hsl(20 22% 16% / 0.28)",
       },
       letterSpacing: {
         tightest: "-0.04em",
