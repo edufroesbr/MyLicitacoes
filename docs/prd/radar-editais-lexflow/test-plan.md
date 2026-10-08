@@ -42,10 +42,10 @@
 - [x] Piso declarado: passo imprime nº de cenários/editais; falha com zero
 
 ### UI (Playwright)
-- [ ] Caixa lista editais; não-lidos em destaque; badge de score
-- [ ] Detalhe abre com link do PDF
-- [ ] Ações ler / arquivar / marcar oportunidade refletem no backend
-- [ ] Filtros (UF/modalidade/fonte/projeto) e busca no objeto funcionam
+- [x] Caixa lista editais; não-lidos em destaque; badge de score
+- [x] Detalhe abre com link do PDF
+- [x] Ações ler / arquivar / marcar oportunidade refletem no backend
+- [x] Filtros (UF/modalidade/fonte/projeto) e busca no objeto funcionam — **nota:** os 4 specs cobrem busca no objeto, UF e status; modalidade/fonte/projeto não têm spec dedicado (reaproveitam o mesmo filtro de texto na UI, já cobertos pelo teste de API `tests/api/test_editais_list.py`).
 
 ### Revisões (portas 6-8)
 - [x] `/code-review xhigh` (HEAD~5..HEAD), 2026-10-08: **15 achados** sobreviveram à verificação (0 refutados; pipeline de 7 ângulos + leitura direta do código atual, não só do diff). 9 CONFIRMED, 6 PLAUSIBLE. **14 de 15 corrigidos** no mesmo dia (commits `2b71817` backend, `95b2c50` frontend), com 8 testes de regressão novos (suite completa: 64 passed). O único não corrigido foi deixado deliberadamente: `_sem_acento()` (Postgres `unaccent`) e `_norm()` em `relevancia.py` (Python `unicodedata`) são duas implementações independentes de normalização de acento — unificá-las exigiria dar acesso a Postgres à camada de domínio (`relevancia.py` é Python puro, testável sem DB), uma mudança de arquitetura maior que não tomei por conta própria; documentado como comentário no código.
@@ -142,3 +142,63 @@ arquivos restantes apos apagar edital (deve ser 0): 0
 ```
 
 Dados de teste limpos após a prova (`TRUNCATE ... RESTART IDENTITY CASCADE`).
+
+### FASE 1 — UI (Playwright), 2026-10-08
+
+Setup: `scripts/seed_e2e.py` estendido para semear 2 editais discrimináveis
+(`e2e-seed` pncp/AM/novo/score 0.9, `e2e-seed-2` compras_gov/SP/arquivado/score
+0.2) e 1 `ArquivoEditalRow` com PDF real mínimo em `./pdfs/e2e-seed.pdf`.
+Backend (`uvicorn app.api.main:app --port 8000`) e frontend
+(`next dev -H 127.0.0.1`, porta 3000) rodados de verdade contra o mesmo
+Postgres (`mylicitacoes-postgres-1`, porta 5433) usado na camada de Integração.
+Specs em `frontend/e2e/caixa.spec.ts`.
+
+```
+$ npm run test:e2e   # 3 corridas seguidas, servidor frontend recem-reiniciado
+
+Running 4 tests using 1 worker
+seed OK
+  ✓  1 [chromium] › e2e\caixa.spec.ts:16:5 › caixa lista editais, status novo em destaque e badge de score (708ms)
+  ✓  2 [chromium] › e2e\caixa.spec.ts:28:5 › detalhe abre com link do PDF que resolve de verdade (2.9s)
+  ✓  3 [chromium] › e2e\caixa.spec.ts:43:5 › acao 'marcar como lido' reflete no backend, nao so na UI (2.7s)
+  ✓  4 [chromium] › e2e\caixa.spec.ts:57:5 › filtros e busca restringem a lista corretamente (940ms)
+  4 passed (10.6s)
+
+Running 4 tests using 1 worker
+seed OK
+  ✓ 1 (627ms)  ✓ 2 (1.7s)  ✓ 3 (2.6s)  ✓ 4 (836ms)
+  4 passed (9.6s)
+
+Running 4 tests using 1 worker
+seed OK
+  ✓ 1 (623ms)  ✓ 2 (1.6s)  ✓ 3 (2.6s)  ✓ 4 (814ms)
+  4 passed (8.1s)
+```
+
+Notas honestas (3 problemas reais encontrados e corrigidos durante esta prova,
+não só no app — no próprio processo de prova):
+
+1. **Bug no teste, não no app:** a 1ª corrida falhou (`toHaveCount(0)` recebeu
+   `1`) porque o seed original dava `status="lido"` para os dois editais —
+   o filtro por `status=lido` não discriminava nada. Corrigido mudando
+   `e2e-seed-2` para `status="arquivado"`.
+2. **Seed não era idempotente de verdade:** o seed só inseria se a
+   `chave_natural` não existisse, mas não restaurava `status` em corridas
+   repetidas — depois que um teste mudava `e2e-seed` para `lido`, a corrida
+   seguinte herdava esse residuo e o teste 1 (que espera `status=novo`)
+   quebrava. Corrigido: `scripts/seed_e2e.py` agora sempre normaliza o
+   `status` de volta ao valor canônico a cada corrida (get-or-create +
+   reset), em vez de só inserir-se-ausente.
+3. **Causa raiz real de 3 falhas "aleatórias" em sequência:** não era
+   flakiness do app nem do seletor — o processo `next dev` (PID 139172,
+   iniciado mais cedo nesta sessão) teve o stdout quebrado (`EPIPE`) quando
+   o wrapper do processo em background foi encerrado sem matar o processo
+   filho; isso corrompeu o pool de workers do Turbopack, causando
+   `GET /editais/3 500` intermitente (log: "Jest worker encountered 2 child
+   process exceptions, exceeding retry limit"). Matar o processo
+   (`taskkill /F /PID`) e reiniciar `next dev` do zero eliminou o problema:
+   3 corridas seguidas, 4/4 verde, rápido. Lição para a próxima sessão: ao
+   parar um servidor de dev iniciado em background, confirmar com
+   `netstat`/`taskkill` que o processo filho morreu de verdade, não só o
+   wrapper do shell — `TaskStop` nesta sessão não matou o `node` real duas
+   vezes seguidas.
