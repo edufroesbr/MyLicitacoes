@@ -83,6 +83,12 @@ export default function DigestPage() {
             </div>
           )}
 
+          {digest.resumo.fontes_zero && digest.resumo.fontes_zero.length > 0 && (
+            <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-foreground-muted">
+              Fontes que leram 0 (verificar se e normal): {digest.resumo.fontes_zero.join(", ")}
+            </div>
+          )}
+
           <section>
             <h2 className="mb-2 text-sm font-semibold text-foreground">Destaques</h2>
             {digest.destaques.length === 0 && (

@@ -21,11 +21,13 @@ class Digest:
     fontes_com_falha: tuple[str, ...]
     destaques: tuple[Edital, ...]
     projetos: tuple[LinhaProjeto, ...]
+    fontes_zero: tuple[str, ...] = ()  # fonte respondeu ok mas leu 0 itens na janela - suspeito, nao e erro
 
 
 def montar_digest(data_ref: date, relevantes: Sequence[Edital], novos_total: int,
                   downloads: int, fontes_falha: Sequence[str],
-                  projetos_linhas: Sequence[LinhaProjeto], max_destaques: int = 10) -> Digest:
+                  projetos_linhas: Sequence[LinhaProjeto], max_destaques: int = 10,
+                  fontes_zero: Sequence[str] = ()) -> Digest:
     return Digest(
         data_ref=data_ref,
         total_novos=novos_total,
@@ -34,4 +36,5 @@ def montar_digest(data_ref: date, relevantes: Sequence[Edital], novos_total: int
         fontes_com_falha=tuple(fontes_falha),
         destaques=tuple(relevantes[:max_destaques]),
         projetos=tuple(projetos_linhas),
+        fontes_zero=tuple(fontes_zero),
     )

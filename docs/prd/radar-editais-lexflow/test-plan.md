@@ -26,13 +26,13 @@
 ### Integração (Postgres real)
 - [x] captura -> persistência: novos inseridos, existentes não duplicados
 - [x] índice único `(fonte, chave_natural)` impede duplicado
-- [ ] `execucao_captura` grava contadores e status (`sucesso`/`parcial`/`falha`) — **gap real:** o código só grava `"sucesso"`/`"falha"` por fonte (`app/scheduler/orquestrador.py` linhas 33/36); a string `"parcial"` não existe em lugar nenhum do código (`grep -rn parcial app/ tests/` → vazio). `test_ultima_captura_ignora_execucao_com_falha` prova sucesso/falha; falta decidir se "parcial" é um status por fonte a implementar ou se o status do dia deveria vir derivado de `fontes_falha` (já existe em `Digest.fontes_com_falha`) — não decidi isso por conta própria.
+- [ ] `execucao_captura` grava contadores e status (`sucesso`/`parcial`/`falha`) — **decisão (2026-10-08): não implementado, de propósito (YAGNI).** Nada consome um status tri-estado por fonte hoje; o `Digest` já carrega `fontes_com_falha` E (desde este commit) `fontes_zero`, que juntos dão mais sinal do que um enum `"parcial"` daria (dizem QUAIS fontes falharam/leram zero, não só "algo deu parcial"). Adicionar uma 3ª string ao `status` de `execucao_captura` sem nenhum consumidor seria especulativo. Revisitar só se/quando existir um consumidor real (ex.: painel de status por fonte).
 - [x] FK `arquivo_edital -> edital` com `ON DELETE CASCADE` remove arquivos ao apagar edital
 
 ### Isolamento de falhas
-- [ ] Fonte A cai, fonte B continua: dia marcado `parcial`, editais de B persistidos — **parcialmente provado:** "editais de B persistidos" está provado (`test_fonte_que_cai_nao_derruba_a_outra`); "dia marcado parcial" não, pelo mesmo gap do item acima.
+- [x] Fonte A cai, fonte B continua: editais de B persistidos (`test_fonte_que_cai_nao_derruba_a_outra`) — **nota:** não existe um campo literal "dia marcado parcial" (decisão YAGNI acima); o sinal equivalente é `Digest.fontes_com_falha`, já visível no e-mail/Telegram/portal.
 - [x] Janela incremental re-corrida não duplica (idempotência)
-- [ ] Varredura que leu zero numa janela com dados esperados = falha visível (piso) — **gap real:** só existe guarda para "todas as modalidades PNCP erraram" (`app/adapters/fontes/pncp.py:107`, `sucessos == 0 and ultimo_erro is not None`); não há guarda para "a fonte respondeu 200 mas devolveu zero itens numa janela onde se esperava ter dados" — hoje isso passa em silêncio como `novos=0`, sem sinal de alerta.
+- [x] Varredura que leu zero numa janela com dados esperados = falha visível (piso) — **corrigido 2026-10-08:** `Resultado.fontes_zero` (orquestrador.py) marca toda fonte que respondeu sem erro mas leu 0 itens; propagado a `Digest.fontes_zero` e visível no e-mail/Telegram (`render.py`), no portal (`portal.py` -> `DigestLogRow.resumo`) e na página `/digest` (`frontend/app/digest/page.tsx`). Não auto-falha o job (um dia sem editais pode ser legítimo) — só torna o silêncio visível para revisão humana, mesmo padrão que o "piso declarado" do E2E já usava. Prova: `test_fonte_ok_mas_zero_itens_fica_visivel_no_resultado_e_no_digest`.
 
 ### E2E (fake ao nível do fio, contentores)
 - [x] Fake HTTP imita PNCP (`/v1/contratacoes/publicacao` paginado + `/arquivos`)
@@ -202,3 +202,21 @@ não só no app — no próprio processo de prova):
    `netstat`/`taskkill` que o processo filho morreu de verdade, não só o
    wrapper do shell — `TaskStop` nesta sessão não matou o `node` real duas
    vezes seguidas.
+
+### FASE 1 — Isolamento de falhas: "zero leu, falha visível", 2026-10-08
+
+```
+$ export MYLIC_DATABASE_URL="postgresql+psycopg://mylic:mylic@localhost:5433/mylic"
+$ uv run pytest -q
+.................................................................        [100%]
+65 passed, 2 warnings in 12.55s
+
+$ cd frontend && npm run build
+✓ Compiled successfully in 1487ms
+  Running TypeScript ...
+  Finished TypeScript in 3.0s ...
+✓ Generating static pages using 8 workers (6/6) in 713ms
+```
+
+Decisão deliberada (não implementada): status `"parcial"` em `execucao_captura`
+— YAGNI, nenhum consumidor real hoje; ver nota na linha do item acima.

@@ -15,5 +15,6 @@ class PortalDigest:
                 enviado_em=datetime.now(timezone.utc),
                 resumo={"novos": d.total_novos, "relevantes": d.total_relevantes,
                         "downloads": d.total_downloads,
-                        "fontes_com_falha": list(d.fontes_com_falha)}))
+                        "fontes_com_falha": list(d.fontes_com_falha),
+                        "fontes_zero": list(d.fontes_zero)}))
             s.commit()

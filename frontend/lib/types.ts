@@ -49,6 +49,7 @@ export interface ResumoDigest {
   relevantes?: number;
   downloads?: number;
   fontes_com_falha?: string[];
+  fontes_zero?: string[];
 }
 
 export interface Digest {

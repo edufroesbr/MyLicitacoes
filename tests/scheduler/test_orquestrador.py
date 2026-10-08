@@ -67,6 +67,28 @@ def test_fonte_que_cai_nao_derruba_a_outra(monkeypatch):
     assert len(canal.enviados) == 1
 
 
+def test_fonte_ok_mas_zero_itens_fica_visivel_no_resultado_e_no_digest(monkeypatch):
+    """Regressao: fonte respondeu sem erro mas leu 0 itens na janela - isso
+    passava em silencio como novos=0, indistinguivel de um dia sem editais
+    de verdade. Agora fica marcado em res.fontes_zero e no digest."""
+    import app.scheduler.orquestrador as orq
+    monkeypatch.setattr(orq, "upsert_editais", lambda s, itens: (
+        {(e.fonte.value, e.chave_natural): 1 for e, sc, h in itens}, len(itens)))
+    monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
+    monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
+    monkeypatch.setattr(orq, "ultima_captura", lambda s, fonte: None)
+    boa = FonteFake("pncp", [_ed(Fonte.PNCP, "k1", "servico de clipping")])
+    vazia = FonteFake("compras_gov", [])
+    store, canal = StoreFake(), CanalFake()
+    res = orq.executar(SessionFake(), [boa, vazia], ClassifFake(), store, [canal],
+                       baixar_conteudo=lambda url: b"%PDF", janela_inicial_dias=7,
+                       score_piso=0.34, hoje=date(2026, 9, 2))
+    assert res.fontes_zero == ["compras_gov"]
+    assert "compras_gov" not in res.fontes_falha  # nao e erro, e so suspeito
+    digest = canal.enviados[0]
+    assert digest.fontes_zero == ("compras_gov",)
+
+
 class FonteArquivosExplode:
     """Fonte cujo listar_arquivos falha para um edital especifico (ex.: timeout/500 do PNCP)."""
     nome = "pncp"

@@ -13,6 +13,7 @@ class Resultado:
     relevantes: int = 0
     downloads: int = 0
     fontes_falha: list[str] = field(default_factory=list)
+    fontes_zero: list[str] = field(default_factory=list)
 
 
 def executar(session, fontes, classificador, armazenamento, canais,
@@ -30,6 +31,8 @@ def executar(session, fontes, classificador, armazenamento, canais,
             editais = f.buscar(inicio, fim)
             capturados.extend(editais)
             por_nome[f.nome] = f
+            if not editais:
+                res.fontes_zero.append(f.nome)
             registar_execucao(session, f.nome, inicio, fim, len(editais), 0, 0, "sucesso")
         except Exception as exc:  # isolamento por fonte
             res.fontes_falha.append(f.nome)
@@ -61,7 +64,8 @@ def executar(session, fontes, classificador, armazenamento, canais,
         except Exception:
             session.rollback()  # falha ao listar/baixar arquivos de um edital nao bloqueia os outros
 
-    digest = montar_digest(fim, relevantes, res.novos, res.downloads, res.fontes_falha, [])
+    digest = montar_digest(fim, relevantes, res.novos, res.downloads, res.fontes_falha, [],
+                           fontes_zero=res.fontes_zero)
     for canal in canais:
         try:
             canal.enviar(digest)

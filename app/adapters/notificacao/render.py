@@ -8,6 +8,8 @@ def render_texto(d: Digest) -> str:
               f"Novos: {d.total_novos} | Relevantes: {d.total_relevantes} | Downloads: {d.total_downloads}"]
     if d.fontes_com_falha:
         linhas.append(f"Fontes com falha: {', '.join(d.fontes_com_falha)}")
+    if d.fontes_zero:
+        linhas.append(f"Fontes que leram 0 (verificar): {', '.join(d.fontes_zero)}")
     for p in d.projetos:
         linhas.append(f"Projeto {p.nome}: {p.novos} novos, {p.prazo_a_fechar} com prazo a fechar")
     for e in d.destaques:
@@ -24,6 +26,7 @@ def render_html(d: Digest) -> str:
         f"<li>{html.escape(p.nome)}: {p.novos} novos, {p.prazo_a_fechar} a fechar</li>"
         for p in d.projetos)
     falha = f"<p>Fontes com falha: {', '.join(d.fontes_com_falha)}</p>" if d.fontes_com_falha else ""
+    zero = f"<p>Fontes que leram 0 (verificar): {', '.join(d.fontes_zero)}</p>" if d.fontes_zero else ""
     return (f"<h2>Radar de Editais — {d.data_ref.isoformat()}</h2>"
             f"<p>Novos: {d.total_novos} | Relevantes: {d.total_relevantes} | Downloads: {d.total_downloads}</p>"
-            f"{falha}<h3>Projetos</h3><ul>{projetos}</ul><h3>Destaques</h3><ul>{itens}</ul>")
+            f"{falha}{zero}<h3>Projetos</h3><ul>{projetos}</ul><h3>Destaques</h3><ul>{itens}</ul>")
