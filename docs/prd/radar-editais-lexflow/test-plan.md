@@ -24,22 +24,22 @@
 - [x] parser Compras.gov: fixture JSON real -> `Edital`
 
 ### Integração (Postgres real)
-- [ ] captura -> persistência: novos inseridos, existentes não duplicados
-- [ ] índice único `(fonte, chave_natural)` impede duplicado
-- [ ] `execucao_captura` grava contadores e status (`sucesso`/`parcial`/`falha`)
-- [ ] FK `arquivo_edital -> edital` com `ON DELETE CASCADE` remove arquivos ao apagar edital
+- [x] captura -> persistência: novos inseridos, existentes não duplicados
+- [x] índice único `(fonte, chave_natural)` impede duplicado
+- [ ] `execucao_captura` grava contadores e status (`sucesso`/`parcial`/`falha`) — **gap real:** o código só grava `"sucesso"`/`"falha"` por fonte (`app/scheduler/orquestrador.py` linhas 33/36); a string `"parcial"` não existe em lugar nenhum do código (`grep -rn parcial app/ tests/` → vazio). `test_ultima_captura_ignora_execucao_com_falha` prova sucesso/falha; falta decidir se "parcial" é um status por fonte a implementar ou se o status do dia deveria vir derivado de `fontes_falha` (já existe em `Digest.fontes_com_falha`) — não decidi isso por conta própria.
+- [x] FK `arquivo_edital -> edital` com `ON DELETE CASCADE` remove arquivos ao apagar edital
 
 ### Isolamento de falhas
-- [ ] Fonte A cai, fonte B continua: dia marcado `parcial`, editais de B persistidos
-- [ ] Janela incremental re-corrida não duplica (idempotência)
-- [ ] Varredura que leu zero numa janela com dados esperados = falha visível (piso)
+- [ ] Fonte A cai, fonte B continua: dia marcado `parcial`, editais de B persistidos — **parcialmente provado:** "editais de B persistidos" está provado (`test_fonte_que_cai_nao_derruba_a_outra`); "dia marcado parcial" não, pelo mesmo gap do item acima.
+- [x] Janela incremental re-corrida não duplica (idempotência)
+- [ ] Varredura que leu zero numa janela com dados esperados = falha visível (piso) — **gap real:** só existe guarda para "todas as modalidades PNCP erraram" (`app/adapters/fontes/pncp.py:107`, `sucessos == 0 and ultimo_erro is not None`); não há guarda para "a fonte respondeu 200 mas devolveu zero itens numa janela onde se esperava ter dados" — hoje isso passa em silêncio como `novos=0`, sem sinal de alerta.
 
 ### E2E (fake ao nível do fio, contentores)
-- [ ] Fake HTTP imita PNCP (`/v1/contratacoes/publicacao` paginado + `/arquivos`)
-- [ ] Fake HTTP imita Compras.gov (consulta por data)
-- [ ] Fluxo: captura -> matching -> caixa populada -> PDF baixado -> digest gerado
-- [ ] Digest chega ao coletor de e-mail falso e ao stub de Telegram; página `/digest/hoje` renderiza
-- [ ] Piso declarado: passo imprime nº de cenários/editais; falha com zero
+- [x] Fake HTTP imita PNCP (`/v1/contratacoes/publicacao` paginado + `/arquivos`)
+- [ ] Fake HTTP imita Compras.gov (consulta por data) — **gap real:** `tests/e2e/fake_portais.py` só tem o handler do PNCP; não existe fake E2E do Compras.gov.
+- [ ] Fluxo: captura -> matching -> caixa populada -> PDF baixado -> digest gerado — **parcial:** `test_captura_ate_digest` prova captura->matching->digest, mas usa `SessionFake`/`upsert_editais` mockado, não Postgres real + API de leitura — "caixa populada" (via API) não está provado neste teste.
+- [ ] Digest chega ao coletor de e-mail falso e ao stub de Telegram; página `/digest/hoje` renderiza — **não provado:** o E2E usa `CanalFake`, não os adaptadores reais de e-mail/Telegram (esses têm teste próprio em `tests/adapters/test_notificacao.py`, mas isolado, não encadeado no E2E); não há teste de render da página `/digest/hoje`.
+- [x] Piso declarado: passo imprime nº de cenários/editais; falha com zero
 
 ### UI (Playwright)
 - [ ] Caixa lista editais; não-lidos em destaque; badge de score
@@ -48,8 +48,8 @@
 - [ ] Filtros (UF/modalidade/fonte/projeto) e busca no objeto funcionam
 
 ### Revisões (portas 6-8)
-- [ ] `/code-review xhigh`: __ achados (colar resumo)
-- [ ] `/ponytail-review`: __ achados (colar resumo)
+- [ ] `/code-review xhigh`: __ achados (colar resumo) — rodando em segundo plano, 2026-10-08
+- [x] `/ponytail-review` (HEAD~5..HEAD, backend): nenhum achado — `net: 0 lines possible. Lean already. Ship.` Verificado: `_RetryTransitorio` (http_client.py), mapeamento `TIPOS_DOCUMENTO` (pncp.py), filtro `fase_proposta` e helper `_sem_acento` (editais.py) — todos têm 2+ usos reais ou justificativa direta, sem abstração especulativa.
 
 ---
 
@@ -104,3 +104,41 @@ tests/adapters/test_compras_gov.py::test_parse_item_primeiro_registo PASSED [100
 
 ============================= 21 passed in 0.31s ==============================
 ```
+
+### FASE 1 — Integração (Postgres real) + Isolamento + E2E, 2026-10-08
+
+```
+$ docker compose up -d   # postgres:16 em localhost:5433 (mylic/mylic/mylic)
+$ export MYLIC_DATABASE_URL="postgresql+psycopg://mylic:mylic@localhost:5433/mylic"
+$ uv run alembic upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+$ uv run alembic current
+unaccent_situacao_20261008 (head)
+
+$ uv run pytest -v
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+collecting ... collected 55 items
+[... 55 itens, todos PASSED, incluindo:
+ tests/db/test_repo.py::test_upsert_nao_duplica_e_conta PASSED
+ tests/db/test_repo.py::test_upsert_devolve_ids_e_persistir_arquivo PASSED
+ tests/db/test_repo.py::test_ultima_captura_ignora_execucao_com_falha PASSED
+ tests/scheduler/test_orquestrador.py::test_fonte_que_cai_nao_derruba_a_outra PASSED
+ tests/scheduler/test_orquestrador.py::test_listar_arquivos_que_falha_nao_bloqueia_outro_edital_nem_o_digest PASSED
+ tests/scheduler/test_orquestrador.py::test_canal_que_falha_nao_impede_os_restantes PASSED
+ tests/scheduler/test_orquestrador.py::test_cada_fonte_recebe_a_sua_propria_janela_incremental PASSED
+ tests/e2e/test_captura_ate_digest.py::test_captura_ate_digest PASSED]
+======================= 55 passed, 2 warnings in 10.07s =======================
+```
+
+Prova ad-hoc (script Python direto contra o Postgres real, bypassando o ORM upsert, para provar o índice único e o FK CASCADE ao nível do banco — não só da lógica Python):
+
+```
+edital inserido id= 1
+OK unique index rejeitou duplicado: IntegrityError (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "uq_edital_fonte_chave"
+arquivo inserido id= 1
+arquivos restantes apos apagar edital (deve ser 0): 0
+```
+
+Dados de teste limpos após a prova (`TRUNCATE ... RESTART IDENTITY CASCADE`).
