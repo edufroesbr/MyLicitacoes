@@ -28,6 +28,7 @@ def _d(s: str | None) -> date | None:
 
 def _parse_item(item: dict) -> Edital:
     valor = item.get("valor_estimado_total")
+    situacao = item.get("situacao_aviso")
     return Edital(
         fonte=Fonte.COMPRAS_GOV,
         chave_natural=str(item.get("identificador") or item.get("id_compra") or ""),
@@ -42,6 +43,7 @@ def _parse_item(item: dict) -> Edital:
         data_abertura=_d(item.get("data_abertura_proposta")),
         data_fim_propostas=_d(item.get("data_entrega_proposta")),
         url_origem="https://compras.gov.br",
+        situacao_compra=situacao[:60] if situacao else None,
     )
 
 

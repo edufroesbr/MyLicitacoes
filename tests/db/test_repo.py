@@ -50,6 +50,32 @@ def test_upsert_devolve_ids_e_persistir_arquivo():
         assert len(rows) == 1 and rows[0].hash
 
 
+def test_upsert_atualiza_situacao_e_datas_quando_conteudo_muda():
+    """Regressao: o branch de update so tocava objeto/score/motivo/hash,
+    deixando situacao_compra/data_abertura/data_fim_propostas congelados no
+    valor da primeira captura mesmo quando o PNCP prorroga/encerra o prazo."""
+    Session = make_session(os.environ["MYLIC_DATABASE_URL"])
+    with Session() as s:
+        e1 = Edital(Fonte.PNCP, "k-refresh-1", "clipping", "Org", "00000000000191", "AM",
+                    "Manaus", "Pregao", Decimal("1"), date(2026, 9, 1),
+                    date(2026, 9, 1), date(2026, 10, 20), "http://x",
+                    situacao_compra="Divulgada no PNCP")
+        repo.upsert_editais(s, [(e1, ScoreRelevancia(0.9, ("clipping",)), hash_conteudo(e1))])
+        s.commit()
+
+        e2 = Edital(Fonte.PNCP, "k-refresh-1", "clipping prorrogado", "Org", "00000000000191", "AM",
+                    "Manaus", "Pregao", Decimal("1"), date(2026, 9, 1),
+                    date(2026, 9, 1), date(2026, 11, 5), "http://x",
+                    situacao_compra="Encerrada")
+        repo.upsert_editais(s, [(e2, ScoreRelevancia(0.9, ("clipping",)), hash_conteudo(e2))])
+        s.commit()
+
+        from app.db.models import EditalRow
+        row = s.query(EditalRow).filter_by(fonte="pncp", chave_natural="k-refresh-1").one()
+        assert row.situacao_compra == "Encerrada"
+        assert row.data_fim_propostas == date(2026, 11, 5)
+
+
 def test_ultima_captura_ignora_execucao_com_falha():
     """Guard de ultima_captura/registar_execucao: uma execucao 'falha' mais
     recente NAO pode mascarar a janela da ultima execucao 'sucesso' — senao a

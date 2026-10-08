@@ -76,3 +76,29 @@ def test_filtro_fase_proposta():
     objs = [e["objeto"] for e in r.json()["itens"]]
     assert "ainda nao abriu" in objs
     assert "em recebimento de propostas" not in objs
+
+
+def test_fase_proposta_recebendo_nao_prende_edital_sem_nenhuma_data():
+    """Regressao: edital sem data_abertura NEM data_fim_propostas (comum em
+    Dispensa) caia sempre em 'recebendo' (coalesce(..., True) nos dois lados),
+    e nunca em a_receber/encerrada - ficava marcado como ativo para sempre."""
+    _seed("dispensa sem datas conhecidas", chave="sem-data",
+          data_abertura=None, data_fim_propostas=None)
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get("/editais", params={"fase_proposta": "recebendo"})
+    objs = [e["objeto"] for e in r.json()["itens"]]
+    assert "dispensa sem datas conhecidas" not in objs
+
+
+def test_busca_escapa_wildcards_do_like():
+    """Regressao: busca por 'SRP_2026' casava com 'SRPX2026' porque o _ do
+    LIKE nao era escapado."""
+    _seed("Pregao SRP_2026 para aquisicao", chave="srp-literal")
+    _seed("Pregao SRPX2026 nao relacionado", chave="srp-wildcard")
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get("/editais", params={"q": "SRP_2026"})
+    objs = [e["objeto"] for e in r.json()["itens"]]
+    assert "Pregao SRP_2026 para aquisicao" in objs
+    assert "Pregao SRPX2026 nao relacionado" not in objs

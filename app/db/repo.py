@@ -31,6 +31,9 @@ def upsert_editais(
         elif row.hash_conteudo != h:
             row.hash_conteudo = h
             row.objeto = e.objeto
+            row.data_abertura = e.data_abertura
+            row.data_fim_propostas = e.data_fim_propostas
+            row.situacao_compra = e.situacao_compra
             row.score_relevancia = sc.valor
             row.motivo_relevancia = ",".join(sc.termos)
         ids[(e.fonte.value, e.chave_natural)] = row.id

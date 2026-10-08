@@ -14,3 +14,10 @@ def test_parse_item_primeiro_registo():
     assert e.fonte == Fonte.COMPRAS_GOV
     assert e.chave_natural
     assert e.objeto  # objeto não vazio
+
+
+def test_parse_item_captura_situacao_compra():
+    """Regressao: situacao_compra ficava sempre None para esta fonte (so o PNCP mapeava)."""
+    itens = FIX.get("resultado") or []
+    e = _parse_item(itens[0])
+    assert e.situacao_compra == "Publicado"

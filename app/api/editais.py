@@ -2,7 +2,7 @@ from datetime import date
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from app.api.deps import get_session
 from app.api.schemas import EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
 from app.config import Settings
@@ -14,9 +14,17 @@ router = APIRouter()
 def _sem_acento(col):
     """ILIKE acento-insensitivo via extensao `unaccent` do Postgres (migracao
     unaccent_extension). A classificacao de relevancia ja ignora acento
-    (app/domain/relevancia.py::_norm); isto estende o mesmo comportamento
-    a busca textual da Caixa."""
+    (app/domain/relevancia.py::_norm) usando uma normalizacao Python separada
+    (unicodedata); as duas podem, em teoria, discordar num caractere Unicode
+    raro - sao motores diferentes, nao ha um unico ponto de verdade."""
     return func.unaccent(col)
+
+
+def _escapar_like(s: str) -> str:
+    """Escapa os wildcards do LIKE/ILIKE (% e _) para que busca literal nao
+    vire wildcard acidental (ex.: busca por "SRP_2026" nao deve casar com
+    "SRPX2026"). Usar sempre junto com `.ilike(..., escape="\\\\")`."""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 @router.get("/editais", response_model=Pagina)
@@ -30,24 +38,27 @@ def listar(session=Depends(get_session), uf: str | None = None, modalidade: str 
     if modalidade: cond.append(EditalRow.modalidade == modalidade)
     if fonte: cond.append(EditalRow.fonte == fonte)
     if status: cond.append(EditalRow.status == status)
-    if q: cond.append(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{q}%")))
+    if q: cond.append(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{_escapar_like(q)}%"), escape="\\"))
     if fase_proposta:
         hoje = date.today()
         if fase_proposta == "a_receber":
             cond.append(EditalRow.data_abertura > hoje)
         elif fase_proposta == "recebendo":
+            # pelo menos uma data conhecida - senao um edital sem nenhuma das
+            # duas datas (comum em Dispensa) cairia aqui para sempre, porque o
+            # coalesce(..., True) abaixo tambem o excluiria de a_receber/encerrada.
+            cond.append(or_(EditalRow.data_abertura.isnot(None), EditalRow.data_fim_propostas.isnot(None)))
             cond.append(func.coalesce(EditalRow.data_abertura <= hoje, True))
             cond.append(func.coalesce(EditalRow.data_fim_propostas >= hoje, True))
         elif fase_proposta == "encerrada":
             cond.append(EditalRow.data_fim_propostas < hoje)
     if projeto_id is not None:
-        from sqlalchemy import or_
         from app.db.models import ProjetoInteresseRow
         proj = session.get(ProjetoInteresseRow, projeto_id)
         if proj is None or not proj.ativo:
             raise HTTPException(404, "projeto nao encontrado")
         if proj.palavras_chave:
-            cond.append(or_(*(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{p}%"))
+            cond.append(or_(*(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{_escapar_like(p)}%"), escape="\\")
                                for p in proj.palavras_chave)))
         f = proj.filtros or {}
         if f.get("uf"): cond.append(EditalRow.uf == f["uf"])

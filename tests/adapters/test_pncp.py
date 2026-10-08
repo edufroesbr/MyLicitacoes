@@ -106,6 +106,15 @@ def test_parse_item_captura_situacao_compra():
     assert e.situacao_compra == "Divulgada no PNCP"
 
 
+def test_parse_item_trunca_situacao_compra_longa():
+    """Regressao: situacaoCompraNome > 60 chars quebrava session.flush() (coluna
+    String(60)) sem try/except ao redor, abortando a captura diaria inteira."""
+    item = dict(FIX["data"][0])
+    item["situacaoCompraNome"] = "x" * 80
+    e = _parse_item(item)
+    assert len(e.situacao_compra) == 60
+
+
 def test_buscar_pausa_entre_requests(monkeypatch):
     """Regressao: rajada sem pausa disparou 429 real no PNCP (ver sessao 2026-10-08)."""
     esperas: list[float] = []
@@ -118,7 +127,9 @@ def test_buscar_pausa_entre_requests(monkeypatch):
     fonte = pncp_mod.FontePncp("http://fake")
     fonte.buscar(date(2026, 9, 1), date(2026, 9, 2))
 
-    assert esperas == [pncp_mod.PAUSA_ENTRE_REQUESTS] * len(pncp_mod.MODALIDADES)
+    # pausa fica ANTES de cada chamada, exceto a primeira de todas - por isso
+    # len(MODALIDADES)-1, nao len(MODALIDADES) (a ultima pagina nao dorme em vao).
+    assert esperas == [pncp_mod.PAUSA_ENTRE_REQUESTS] * (len(pncp_mod.MODALIDADES) - 1)
 
 
 def test_listar_arquivos_mapeia_tipo_por_tipo_documento_id(monkeypatch):

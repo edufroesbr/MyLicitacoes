@@ -37,6 +37,7 @@ def _parse_item(item: dict) -> Edital:
     ano = item.get("anoCompra")
     seq = item.get("sequencialCompra")
     valor = item.get("valorTotalEstimado")
+    situacao = item.get("situacaoCompraNome")
     return Edital(
         fonte=Fonte.PNCP,
         chave_natural=f"{cnpj}-{ano}-{seq}",
@@ -51,7 +52,7 @@ def _parse_item(item: dict) -> Edital:
         data_abertura=_d(item.get("dataAberturaProposta")),
         data_fim_propostas=_d(item.get("dataEncerramentoProposta")),
         url_origem=f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{seq}",
-        situacao_compra=item.get("situacaoCompraNome"),
+        situacao_compra=situacao[:60] if situacao else None,
     )
 
 
@@ -75,18 +76,24 @@ class FontePncp:
         di, df = inicio.strftime("%Y%m%d"), fim.strftime("%Y%m%d")
         sucessos = 0
         ultimo_erro: Exception | None = None
+        primeira_chamada = True
         with make_client(self._base_url) as c:
             for mod in MODALIDADES:
                 try:
                     pagina = 1
                     while True:
+                        # pausa ANTES da chamada (exceto a primeira de todas), nao depois -
+                        # senao a ultima pagina da ultima modalidade dorme sem nenhuma
+                        # chamada seguinte para proteger.
+                        if not primeira_chamada:
+                            time.sleep(PAUSA_ENTRE_REQUESTS)
+                        primeira_chamada = False
                         r = c.get("/consulta/v1/contratacoes/publicacao", params={
                             "dataInicial": di, "dataFinal": df,
                             "codigoModalidadeContratacao": mod,
                             # PNCP rejeita tamanhoPagina > 50 (400 "Tamanho de pagina invalido").
                             "pagina": pagina, "tamanhoPagina": TAMANHO_PAGINA,
                         })
-                        time.sleep(PAUSA_ENTRE_REQUESTS)
                         if r.status_code == 204:
                             break
                         r.raise_for_status()
