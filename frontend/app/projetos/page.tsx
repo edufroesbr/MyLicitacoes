@@ -5,6 +5,8 @@ import { FolderSearch, Pencil, Plus, Trash2 } from "lucide-react";
 import { apagarProjeto, atualizarProjeto, criarProjeto, listarProjetos } from "@/lib/api";
 import type { Projeto } from "@/lib/types";
 import ProjetoForm, { type DadosProjetoForm } from "@/components/ProjetoForm";
+import { Chip } from "@/components/Badge";
+import Modal from "@/components/Modal";
 
 export default function ProjetosPage() {
   const [projetos, setProjetos] = useState<Projeto[]>([]);
@@ -13,6 +15,7 @@ export default function ProjetosPage() {
   const [editando, setEditando] = useState<Projeto | null>(null);
   const [criando, setCriando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [apagando, setApagando] = useState<Projeto | null>(null);
 
   function carregar() {
     setCarregando(true);
@@ -44,10 +47,12 @@ export default function ProjetosPage() {
     }
   }
 
-  async function apagar(id: number) {
+  async function apagar() {
+    if (!apagando) return;
     setErro(null);
     try {
-      await apagarProjeto(id);
+      await apagarProjeto(apagando.id);
+      setApagando(null);
       carregar();
     } catch (e: unknown) {
       setErro(e instanceof Error ? e.message : String(e));
@@ -131,9 +136,9 @@ export default function ProjetosPage() {
               className="flex items-center justify-between gap-2 border-b border-border p-4 last:border-0"
             >
               <div className="min-w-0">
-                <div className="truncate font-medium text-foreground">
-                  {p.nome}
-                  {!p.ativo && <span className="ml-2 text-xs text-foreground-muted">(inativo)</span>}
+                <div className="flex items-center gap-2">
+                  <span className="truncate font-medium text-foreground">{p.nome}</span>
+                  <Chip tone={p.ativo ? "primary" : "muted"}>{p.ativo ? "Ativo" : "Inativo"}</Chip>
                 </div>
                 <div className="truncate text-sm text-foreground-muted">
                   {p.palavras_chave.length > 0 ? p.palavras_chave.join(", ") : "sem palavras-chave"}
@@ -152,7 +157,7 @@ export default function ProjetosPage() {
                 </button>
                 <button
                   className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-danger transition-colors hover:bg-danger/5"
-                  onClick={() => apagar(p.id)}
+                  onClick={() => setApagando(p)}
                 >
                   <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
                   Apagar
@@ -162,6 +167,31 @@ export default function ProjetosPage() {
           ))}
         </ul>
       )}
+
+      <Modal open={apagando !== null} onClose={() => setApagando(null)}>
+        {apagando && (
+          <div className="max-w-sm">
+            <p className="text-sm text-foreground">
+              Tem certeza que quer apagar o projeto &quot;{apagando.nome}&quot;? Essa ação não pode
+              ser desfeita.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                className="rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                onClick={() => setApagando(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="rounded-md bg-danger px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-danger/90"
+                onClick={apagar}
+              >
+                Apagar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </main>
   );
 }

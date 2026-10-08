@@ -5,7 +5,7 @@ import { use, useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, FileText } from "lucide-react";
 import { obterEdital, urlArquivo } from "@/lib/api";
 import type { EditalDetalhe, StatusCaixa } from "@/lib/types";
-import { BadgePrazo, BadgeScore } from "@/components/Badge";
+import { BadgePrazo, BadgeScore, Chip } from "@/components/Badge";
 import AcoesStatus from "@/components/AcoesStatus";
 
 const LABELS_TIPO_ARQUIVO: Record<string, string> = {
@@ -75,12 +75,7 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
             <div className="flex flex-wrap items-center gap-1.5">
               <BadgeScore score={edital.score_relevancia} />
               <BadgePrazo dataFim={edital.data_fim_propostas} />
-              <span
-                data-testid="status-atual"
-                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground-muted"
-              >
-                {edital.status}
-              </span>
+              <Chip data-testid="status-atual">{edital.status}</Chip>
             </div>
             <h1 className="font-display text-3xl font-semibold tracking-tightest text-foreground">
               {edital.objeto}
@@ -137,7 +132,8 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
                       className="flex items-center gap-2 p-3 text-sm text-primary-ink transition-colors hover:bg-muted/50"
                     >
                       <FileText aria-hidden className="h-4 w-4 shrink-0 text-foreground-muted" strokeWidth={1.5} />
-                      {LABELS_TIPO_ARQUIVO[arquivo.tipo] ?? arquivo.tipo} (arquivo #{arquivo.id})
+                      <Chip>{LABELS_TIPO_ARQUIVO[arquivo.tipo] ?? arquivo.tipo}</Chip>
+                      <span className="truncate">arquivo #{arquivo.id}</span>
                     </a>
                   </li>
                 ))}
