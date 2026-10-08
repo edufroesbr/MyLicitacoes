@@ -36,7 +36,7 @@
 
 ### E2E (fake ao nível do fio, contentores)
 - [x] Fake HTTP imita PNCP (`/v1/contratacoes/publicacao` paginado + `/arquivos`)
-- [ ] Fake HTTP imita Compras.gov (consulta por data) — **gap real:** `tests/e2e/fake_portais.py` só tem o handler do PNCP; não existe fake E2E do Compras.gov.
+- [x] Fake HTTP imita Compras.gov (consulta por data) — **corrigido 2026-10-08:** `tests/e2e/fake_portais.py` ganhou o handler `/modulo-legado/1_consultarLicitacao`; `test_captura_ate_digest` agora roda PNCP + Compras.gov juntos no mesmo fake server, assert `res.novos >= 2` (1 edital por fonte) e `not res.fontes_falha`/`not res.fontes_zero`.
 - [ ] Fluxo: captura -> matching -> caixa populada -> PDF baixado -> digest gerado — **parcial:** `test_captura_ate_digest` prova captura->matching->digest, mas usa `SessionFake`/`upsert_editais` mockado, não Postgres real + API de leitura — "caixa populada" (via API) não está provado neste teste.
 - [ ] Digest chega ao coletor de e-mail falso e ao stub de Telegram; página `/digest/hoje` renderiza — **não provado:** o E2E usa `CanalFake`, não os adaptadores reais de e-mail/Telegram (esses têm teste próprio em `tests/adapters/test_notificacao.py`, mas isolado, não encadeado no E2E); não há teste de render da página `/digest/hoje`.
 - [x] Piso declarado: passo imprime nº de cenários/editais; falha com zero
@@ -220,3 +220,21 @@ $ cd frontend && npm run build
 
 Decisão deliberada (não implementada): status `"parcial"` em `execucao_captura`
 — YAGNI, nenhum consumidor real hoje; ver nota na linha do item acima.
+
+### FASE 1 — E2E: fake HTTP do Compras.gov, 2026-10-08
+
+```
+$ export MYLIC_DATABASE_URL="postgresql+psycopg://mylic:mylic@localhost:5433/mylic"
+$ uv run pytest tests/e2e -v
+tests/e2e/test_captura_ate_digest.py::test_captura_ate_digest PASSED     [100%]
+============================== 1 passed in 3.02s ==============================
+
+$ uv run pytest -q
+65 passed, 2 warnings in 15.91s
+```
+
+Os outros 2 gaps de E2E (fluxo completo via Postgres real + API de leitura;
+digest chegando a canais reais e render de `/digest/hoje`) ficam para outra
+sessão — cada um é trabalho próprio (orquestrar sessão real do Postgres
+dentro do E2E; encadear os adaptadores reais de notificação + um teste
+Playwright da página), não um ajuste pontual como este.

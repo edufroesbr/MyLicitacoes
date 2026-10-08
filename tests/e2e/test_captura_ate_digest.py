@@ -2,6 +2,7 @@
 from datetime import date
 from tests.e2e.fake_portais import servidor_fake
 from app.adapters.fontes.pncp import FontePncp
+from app.adapters.fontes.compras_gov import FonteComprasGov
 from app.adapters.classificador.keyword import KeywordClassificador
 from app.domain.lexico import LEXICO_TIPO_LEXFLOW
 
@@ -32,13 +33,15 @@ def test_captura_ate_digest(monkeypatch):
     monkeypatch.setattr(orq, "persistir_arquivo", lambda *a, **k: None)
     monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
     with servidor_fake() as base_url:
-        fonte = FontePncp(base_url)
+        fontes = [FontePncp(base_url), FonteComprasGov(base_url)]
         store, canal = StoreFake(), CanalFake()
-        res = orq.executar(SessionFake(), [fonte], KeywordClassificador(LEXICO_TIPO_LEXFLOW),
+        res = orq.executar(SessionFake(), fontes, KeywordClassificador(LEXICO_TIPO_LEXFLOW),
                            store, [canal], baixar_conteudo=lambda url: b"%PDF",
                            janela_inicial_dias=1, score_piso=0.05, hoje=date(2026, 9, 2))
-    assert res.novos >= 1
-    assert res.relevantes >= 1
+    assert res.novos >= 2  # 1 edital por fonte (PNCP + Compras.gov), ambas via fake HTTP real
+    assert res.relevantes >= 2
+    assert not res.fontes_falha
+    assert not res.fontes_zero
     assert store.n >= 1
     assert len(canal.enviados) == 1
     print(f"E2E cenarios: novos={res.novos} relevantes={res.relevantes} downloads={store.n}")

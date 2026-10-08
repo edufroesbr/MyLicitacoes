@@ -13,6 +13,14 @@ _EDITAL = {
     "dataPublicacaoPncp": "2026-09-01T10:00:00",
 }
 
+_EDITAL_COMPRAS_GOV = {
+    "identificador": "uasg-99-2026-7",
+    "objeto": "Contratacao de servico de clipping de imprensa",
+    "nome_modalidade": "Pregao", "valor_estimado_total": 2000.0,
+    "data_publicacao": "2026-09-01",
+    "situacao_aviso": "Publicado",
+}
+
 
 class _H(BaseHTTPRequestHandler):
     def log_message(self, *a):
@@ -23,6 +31,8 @@ class _H(BaseHTTPRequestHandler):
             body = {"data": [_EDITAL], "totalPaginas": 1, "totalRegistros": 1, "numeroPagina": 1}
         elif "/arquivos" in self.path:
             body = [{"url": "http://x/edital.pdf", "titulo": "Edital.pdf"}]
+        elif "/modulo-legado/1_consultarLicitacao" in self.path:
+            body = {"resultado": [_EDITAL_COMPRAS_GOV], "totalPaginas": 1}
         else:
             self.send_response(404); self.end_headers(); return
         data = json.dumps(body).encode("utf-8")
