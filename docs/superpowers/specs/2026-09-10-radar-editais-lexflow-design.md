@@ -56,6 +56,14 @@ implementação (Task 8):** a consulta vive sob `/consulta/...` e os arquivos so
 - Toda contratação da Lei 14.133 passa aqui -> é a espinha da captura.
 - ⚠️ A consulta exige **iterar por `codigoModalidadeContratacao`** (pregão,
   concorrência, dispensa, etc.) — não há "todas as modalidades" num pedido.
+- ⚠️ **Gap API de consulta vs. data lake (pesquisa 2026-10-07):** a API de
+  consulta paginada pode **sub-contar** o que já está no **data lake de
+  dados abertos** do PNCP (arquivos em lote) — caso documentado (São José
+  dos Campos: 3.171 registros via data lake vs. 180 via API de consulta,
+  mesmo recorte). Antes de buscar fontes novas, o maior risco de cobertura
+  está **dentro do próprio PNCP**: o adaptador deve eventualmente consumir
+  também o data lake, não só `/consulta/v1/...` (ver `requirements.md`
+  seção 1.3 e "Questões em aberto").
 
 ### 3.2 Compras.gov.br — fonte secundária (Fase 1)
 Base: `https://dadosabertos.compras.gov.br` (REST/JSON, Swagger em
@@ -63,13 +71,52 @@ Base: `https://dadosabertos.compras.gov.br` (REST/JSON, Swagger em
 data e por **CATMAT/CATSER**; âmbito sobretudo **federal (SIASG)**. Complementa o
 PNCP (sobreposição parcial -> dedup obrigatório entre fontes).
 
-### 3.3 Modus operandi dos benchmarks (a copiar)
-ConLicitação, Effecti, Radar de Licitações, licitagov.org: o utilizador regista
+### 3.2a Demais estados (pesquisa 2026-10-07) — nenhuma fonte nova por ora
+PNCP é obrigatório para União/estados/DF/municípios (Lei 14.133), mas a
+cobertura real em 2026 é **~65% estadual e ~40% municipal** — grandes
+estados ainda mantêm portal próprio em paralelo. Investigação direta:
+- **BEC/SP**: só "web service" legado sem documentação pública de
+  desenvolvedor — referência a uma API de hackathon de 2018, não um
+  contrato estável.
+- **SIAD/MG**: tem um **dataset de dados abertos** real
+  (`dados.mg.gov.br/dataset/compras_contratos`) — dump periódico, não API
+  de consulta em tempo real. Único candidato real de fonte extra.
+- **SIGA/RJ** (`compras.rj.gov.br`) e **Compras RS/CELIC**: só portal HTML
+  de busca de editais, sem API nem dados abertos.
+
+**Decisão:** nenhum adaptador de scraping HTML (BEC/SP, SIGA/RJ, Compras
+RS) — contradiz o princípio de portas devolverem tipo de domínio a partir
+de API, não de HTML frágil, e tem custo de manutenção alto. MG fica como
+candidato de Fase 3, condicionado a gap de cobertura real medido via
+`execucao_captura` — não especulativo.
+
+### 3.3 Modus operandi dos benchmarks (a copiar) e diferenciação
+
+> Pesquisa de mercado (2026-10-07): ConLicitação, LicitaGov, RadarLicita,
+> Edital.net, RadarPregão, BBMNET/Jornal do Licitante, Licitação Nacional,
+> Monitor de Licitações, Licita Já, eLicitaRadar, Radar de Licitações
+> (nocton), Effecti.
+
+**Mesa básica (todos oferecem, sem exceção):** o utilizador regista
 **palavras-chave** (e, nos players, CNAE); um **radar** varre PNCP/Compras.gov/
 Diários **24/7**; **deduplica**; classifica por perfil; entrega **boletim diário
-segmentado** por e-mail/WhatsApp/Slack; busca por termo **no objeto e no texto do
-edital**; oferece **gestão dos documentos**. MyLicitacoes reproduz este ciclo em
-escala de operador único.
+segmentado** por e-mail/WhatsApp/Telegram/Slack; busca por termo **no objeto e
+no texto do edital**; oferece **gestão dos documentos**.
+
+**Topo de categoria (RadarLicita, LicitaGov):** IA/LLM lê o edital, calcula
+score **semântico** (além de keyword exata), extrai exigências/riscos, resume
+o objeto; alerta de prazo de contrato a vencer (60/30/15 dias).
+
+**Lacuna:** nenhum benchmark é verticalizado para o nicho jurídico-tech
+(clipping, monitoramento de publicações, DJE, software jurídico) — todos são
+radares horizontais genéricos. Isto confirma o diferencial do MyLicitacoes:
+léxico curado vertical já embutido + `motivo_relevancia` explicável +
+múltiplos projetos de interesse nomeados por linha de serviço, em vez de um
+perfil único por CNPJ.
+
+MyLicitacoes reproduz o ciclo da mesa básica em escala de operador único, e
+por isso o matching por projeto de interesse + digest segmentado entram já na
+Fase 1 (MVP) — ver `requirements.md`, seção "Benchmark e diferenciação".
 
 ## 4. Arquitetura (hexagonal)
 
@@ -218,10 +265,11 @@ por `if` dentro de quem chama.
 
 - **Fase 1 — Radar PNCP + Compras.gov + Caixa + Digest.** Captura diária das duas
   fontes, matching keyword, caixa Next.js (lista/detalhe/ler/arquivar/oportunidade),
-  download do edital, digest e-mail+Telegram+página. **Produto mínimo utilizável.**
+  download do edital, digest e-mail+Telegram+página **já segmentado por projeto de
+  interesse** (sem UI de gestão). **Produto mínimo utilizável.**
 - **Fase 2 — Classificador LLM + Projetos de Interesse (UI) + fontes extra.**
-  Coarse->LLM por configuração; UI de gestão de projetos de interesse; segmentação
-  do digest por projeto.
+  Coarse->LLM por configuração; UI de gestão de projetos de interesse
+  (criar/editar/ativar/pausar) — o matching e o digest segmentado já são Fase 1.
 - **Fase 3 — Diários Oficiais/DJE + Kanban de oportunidades + enriquecimento**
   (prazo, valor, contacto do órgão), e possível exportação/integração com o LexFlow.
 
