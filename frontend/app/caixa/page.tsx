@@ -11,7 +11,7 @@ import Filtros from "@/components/Filtros";
 const TAMANHO_PAGINA = 20;
 
 function temFiltro(f: FiltrosEditais): boolean {
-  return Boolean(f.q || f.uf || f.modalidade || f.fonte || f.status || f.score_min || f.fase_proposta);
+  return Boolean(f.q || f.uf || f.modalidade || f.fonte || f.status || f.score_min || f.fase_proposta || f.projeto_id);
 }
 
 export default function CaixaPage() {

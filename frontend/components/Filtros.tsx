@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
-import type { FiltrosEditais } from "@/lib/api";
+import { listarProjetos, type FiltrosEditais } from "@/lib/api";
+import type { Projeto } from "@/lib/types";
 
 interface Props {
   filtros: FiltrosEditais;
@@ -19,6 +20,11 @@ export default function Filtros({ filtros, onChange }: Props) {
   const [uf, setUf] = useState(filtros.uf ?? "");
   const [modalidade, setModalidade] = useState(filtros.modalidade ?? "");
   const [fonte, setFonte] = useState(filtros.fonte ?? "");
+  const [projetos, setProjetos] = useState<Projeto[]>([]);
+
+  useEffect(() => {
+    listarProjetos().then((ps) => setProjetos(ps.filter((p) => p.ativo))).catch(() => {});
+  }, []);
 
   function aplicar(extra: Partial<FiltrosEditais> = {}) {
     onChange({
@@ -72,6 +78,16 @@ export default function Filtros({ filtros, onChange }: Props) {
         value={fonte}
         onChange={(e) => setFonte(e.target.value)}
       />
+      <select
+        className={campo}
+        value={filtros.projeto_id ?? ""}
+        onChange={(e) => aplicar({ projeto_id: e.target.value ? Number(e.target.value) : undefined })}
+      >
+        <option value="">Projeto (todos)</option>
+        {projetos.map((p) => (
+          <option key={p.id} value={p.id}>{p.nome}</option>
+        ))}
+      </select>
       <select
         className={campo}
         value={filtros.status ?? ""}
