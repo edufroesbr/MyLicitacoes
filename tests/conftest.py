@@ -13,6 +13,6 @@ def _limpa_db():
     S = make_session(url)
     with S() as s:
         s.execute(text("TRUNCATE arquivo_edital, edital, projeto_interesse, "
-                       "execucao_captura, digest_log RESTART IDENTITY CASCADE"))
+                       "execucao_captura, digest_log, perfil RESTART IDENTITY CASCADE"))
         s.commit()
     yield

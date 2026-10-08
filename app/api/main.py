@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import editais, digest, projetos
+from app.api import editais, digest, projetos, perfil
 
 app = FastAPI(title="MyLicitacoes")
 app.add_middleware(
@@ -12,3 +12,4 @@ app.add_middleware(
 app.include_router(editais.router)
 app.include_router(digest.router)
 app.include_router(projetos.router)
+app.include_router(perfil.router)
