@@ -48,7 +48,7 @@
 - [ ] Filtros (UF/modalidade/fonte/projeto) e busca no objeto funcionam
 
 ### Revisões (portas 6-8)
-- [ ] `/code-review xhigh`: __ achados (colar resumo) — rodando em segundo plano, 2026-10-08
+- [x] `/code-review xhigh` (HEAD~5..HEAD), 2026-10-08: **15 achados** sobreviveram à verificação (0 refutados; pipeline de 7 ângulos + leitura direta do código atual, não só do diff). 9 CONFIRMED, 6 PLAUSIBLE. Destaques: `app/db/repo.py:31` upsert nunca atualiza `situacao_compra`/datas em edital existente (CONFIRMED); `app/api/editais.py:38` `fase_proposta=recebendo` classifica editais sem data como "recebendo" pra sempre (CONFIRMED); `app/adapters/fontes/compras_gov.py:31` `situacao_compra` nunca mapeado para essa fonte (CONFIRMED); `app/db/models.py:25` overflow de `situacao_compra` (String(60) sem try/except) pode abortar a captura diária inteira (PLAUSIBLE). Lista completa com os 15 achados reportada via ReportFindings na sessão — nenhum corrigido ainda, aguardando triagem do founder.
 - [x] `/ponytail-review` (HEAD~5..HEAD, backend): nenhum achado — `net: 0 lines possible. Lean already. Ship.` Verificado: `_RetryTransitorio` (http_client.py), mapeamento `TIPOS_DOCUMENTO` (pncp.py), filtro `fase_proposta` e helper `_sem_acento` (editais.py) — todos têm 2+ usos reais ou justificativa direta, sem abstração especulativa.
 
 ---
