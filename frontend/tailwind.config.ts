@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Mundo "institucional sobrio juridico": papel quente, tinta navy, serif de display.
+// Mundo "estilo Claude": papel creme, tinta terracota, serif de display informal.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {

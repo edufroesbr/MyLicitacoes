@@ -1,16 +1,18 @@
+import { CheckCircle2, CircleDot, Clock, MinusCircle } from "lucide-react";
+
 const pill =
   "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tnum";
 
 export function BadgeScore({ score }: { score: number }) {
   const tier =
     score >= 0.67
-      ? { cls: "bg-score-high/12 text-score-high", dot: "bg-score-high" }
+      ? { cls: "bg-score-high/12 text-score-high", Icone: CheckCircle2 }
       : score >= 0.34
-        ? { cls: "bg-score-mid/14 text-score-mid", dot: "bg-score-mid" }
-        : { cls: "bg-muted text-foreground-muted", dot: "bg-score-low" };
+        ? { cls: "bg-score-mid/14 text-score-mid", Icone: CircleDot }
+        : { cls: "bg-muted text-foreground-muted", Icone: MinusCircle };
   return (
     <span className={`${pill} ${tier.cls}`} title="Relevancia tipo-LexFlow">
-      <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
+      <tier.Icone aria-hidden className="h-3 w-3" strokeWidth={2} />
       {Math.round(score * 100)}%
     </span>
   );
@@ -36,6 +38,7 @@ export function BadgePrazo({ dataFim }: { dataFim: string | null }) {
         : "bg-muted text-foreground-muted";
   return (
     <span className={`${pill} ${cls}`} title="Prazo para propostas">
+      <Clock aria-hidden className="h-3 w-3" strokeWidth={2} />
       {texto}
     </span>
   );

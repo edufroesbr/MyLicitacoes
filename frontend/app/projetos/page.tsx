@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FolderSearch, Pencil, Plus, Trash2 } from "lucide-react";
 import { apagarProjeto, atualizarProjeto, criarProjeto, listarProjetos } from "@/lib/api";
 import type { Projeto } from "@/lib/types";
 import ProjetoForm, { type DadosProjetoForm } from "@/components/ProjetoForm";
@@ -74,9 +75,10 @@ export default function ProjetosPage() {
 
       {!formAberto && (
         <button
-          className="mb-5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"
+          className="mb-5 flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"
           onClick={() => setCriando(true)}
         >
+          <Plus aria-hidden className="h-4 w-4" strokeWidth={2} />
           Novo projeto
         </button>
       )}
@@ -113,18 +115,7 @@ export default function ProjetosPage() {
 
       {!carregando && projetos.length === 0 && (
         <div className="rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-          <svg
-            aria-hidden
-            viewBox="0 0 24 24"
-            className="mx-auto h-8 w-8 text-foreground-muted/60"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
-          </svg>
+          <FolderSearch aria-hidden className="mx-auto h-8 w-8 text-foreground-muted/60" strokeWidth={1.5} />
           <p className="mt-3 font-display text-lg text-foreground">Nenhum projeto criado</p>
           <p className="mt-1 text-sm text-foreground-muted">
             Crie um projeto para vigiar palavras-chave e filtros na caixa.
@@ -150,18 +141,20 @@ export default function ProjetosPage() {
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
-                  className="rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
                   onClick={() => {
                     setEditando(p);
                     setCriando(false);
                   }}
                 >
+                  <Pencil aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
                   Editar
                 </button>
                 <button
-                  className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-danger transition-colors hover:bg-danger/5"
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-danger transition-colors hover:bg-danger/5"
                   onClick={() => apagar(p.id)}
                 >
+                  <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
                   Apagar
                 </button>
               </div>

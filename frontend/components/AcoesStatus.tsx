@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Archive, CheckCheck, Loader2, Star } from "lucide-react";
 import { mudarStatus } from "@/lib/api";
 import type { StatusCaixa } from "@/lib/types";
 
@@ -10,10 +11,10 @@ interface Props {
   onMudou: (novo: StatusCaixa) => void;
 }
 
-const ACOES: { status: StatusCaixa; rotulo: string }[] = [
-  { status: "lido", rotulo: "Marcar como lido" },
-  { status: "arquivado", rotulo: "Arquivar" },
-  { status: "oportunidade", rotulo: "Marcar como oportunidade" },
+const ACOES: { status: StatusCaixa; rotulo: string; Icone: typeof CheckCheck }[] = [
+  { status: "lido", rotulo: "Marcar como lido", Icone: CheckCheck },
+  { status: "arquivado", rotulo: "Arquivar", Icone: Archive },
+  { status: "oportunidade", rotulo: "Marcar como oportunidade", Icone: Star },
 ];
 
 export default function AcoesStatus({ editalId, statusAtual, onMudou }: Props) {
@@ -39,10 +40,15 @@ export default function AcoesStatus({ editalId, statusAtual, onMudou }: Props) {
         {ACOES.map((a) => (
           <button
             key={a.status}
-            className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
             disabled={statusAtual === a.status || processando !== null}
             onClick={() => acionar(a.status)}
           >
+            {processando === a.status ? (
+              <Loader2 aria-hidden className="h-4 w-4 animate-spin" strokeWidth={2} />
+            ) : (
+              <a.Icone aria-hidden className="h-4 w-4" strokeWidth={2} />
+            )}
             {processando === a.status ? "A processar..." : a.rotulo}
           </button>
         ))}

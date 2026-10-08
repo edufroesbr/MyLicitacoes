@@ -2,29 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mundo visual "institucional sobrio juridico" — claro, papel quente, tinta navy,
-   titulos em serif de display. Committed a um unico modo (ferramenta de operador). */
+/* Mundo visual "estilo Claude" — creme quente, tinta terracota, titulos em
+   serif de display mais informal. Committed a um unico modo (ferramenta de
+   operador). Decisao de direcao visual: comparativo A/B, founder escolheu B. */
 :root {
-  --background: 40 33% 96%; /* papel quente */
-  --surface: 42 40% 98%; /* faixas/superficies elevadas */
-  --card: 40 33% 99.5%;
-  --foreground: 216 42% 13%; /* tinta navy quase-preta */
-  --foreground-muted: 216 16% 40%; /* tintado do navy, nunca cinza puro (>=4.5:1 no papel) */
-  --border: 40 22% 87%;
-  --muted: 40 26% 92%; /* hover / faixas */
-  --primary: 212 54% 25%; /* navy profundo */
-  --primary-hover: 212 54% 20%;
-  --primary-foreground: 42 40% 97%;
-  --primary-ink: 212 54% 30%; /* navy para links/texto sobre papel */
-  --accent: 36 44% 42%; /* bronze/selo juridico */
-  --score-high: 158 42% 30%; /* verde sobrio */
-  --score-mid: 36 46% 40%; /* bronze */
-  --score-low: 216 12% 52%;
-  --success: 158 42% 30%;
-  --warning: 36 60% 38%;
-  --danger: 8 56% 44%; /* terracota refinada */
-  --ring: 212 60% 42%;
-  --radius: 0.625rem;
+  --background: 36 38% 93%; /* creme quente */
+  --surface: 38 42% 96%; /* faixas/superficies elevadas */
+  --card: 36 44% 98%;
+  --foreground: 20 22% 16%; /* tinta quente quase-preta */
+  --foreground-muted: 22 14% 42%; /* tintado da tinta, nunca cinza puro (>=4.5:1 no papel) */
+  --border: 32 30% 86%;
+  --muted: 32 32% 90%; /* hover / faixas */
+  --primary: 14 58% 52%; /* terracota */
+  --primary-hover: 14 58% 45%;
+  --primary-foreground: 36 44% 98%;
+  --primary-ink: 14 55% 42%; /* terracota para links/texto sobre papel */
+  --accent: 16 50% 48%; /* terracota-bronze */
+  --score-high: 150 24% 38%; /* verde sobrio */
+  --score-mid: 30 48% 45%; /* terracota clara */
+  --score-low: 20 10% 55%;
+  --success: 150 24% 38%;
+  --warning: 32 60% 42%;
+  --danger: 8 55% 46%; /* terracota-vermelha */
+  --ring: 14 60% 50%;
+  --radius: 0.75rem;
 }
 
 html {
@@ -33,7 +34,7 @@ html {
 
 body {
   background:
-    radial-gradient(120% 60% at 50% -10%, hsl(42 44% 98%) 0%, transparent 60%),
+    radial-gradient(120% 60% at 50% -10%, hsl(38 46% 98%) 0%, transparent 60%),
     hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-sans), "Inter", system-ui, sans-serif;
@@ -60,13 +61,13 @@ body {
   height: 12px;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(216 16% 40% / 0.35);
+  background: hsl(22 14% 42% / 0.35);
   border: 3px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(216 16% 40% / 0.55);
+  background: hsl(22 14% 42% / 0.55);
   background-clip: padding-box;
 }
 

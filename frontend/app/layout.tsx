@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Source_Serif_4, Inter } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 
-const display = Fraunces({
+const display = Source_Serif_4({
   subsets: ["latin"],
   variable: "--font-display",
   weight: ["400", "500", "600"],
