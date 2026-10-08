@@ -21,6 +21,7 @@ export interface FiltrosEditais {
   score_min?: number;
   q?: string;
   projeto_id?: number;
+  fase_proposta?: string;
   pagina?: number;
   tamanho?: number;
 }

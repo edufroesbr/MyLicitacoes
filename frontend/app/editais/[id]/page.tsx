@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import { ArrowLeft, ExternalLink, FileText } from "lucide-react";
 import { obterEdital, urlArquivo } from "@/lib/api";
 import type { EditalDetalhe, StatusCaixa } from "@/lib/types";
 import { BadgePrazo, BadgeScore } from "@/components/Badge";
 import AcoesStatus from "@/components/AcoesStatus";
+
+const LABELS_TIPO_ARQUIVO: Record<string, string> = {
+  edital: "Edital",
+  tr: "Termo de Referência",
+  etp: "Estudo Técnico Preliminar",
+  pb: "Projeto Básico",
+  outro: "Outro documento",
+};
 
 export default function DetalheEditalPage({ params }: { params: Promise<{ id: string }> }) {
   const editalId = Number(use(params).id);
@@ -42,18 +51,7 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
         href="/caixa"
         className="inline-flex items-center gap-1.5 text-sm text-primary-ink hover:underline"
       >
-        <svg
-          aria-hidden
-          viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        <ArrowLeft aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
         Voltar a caixa
       </Link>
 
@@ -90,7 +88,7 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
             <p className="text-sm text-foreground-muted">{edital.motivo_relevancia}</p>
           </header>
 
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border border-border bg-card p-5 text-sm shadow-card">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 rounded-lg border border-border bg-card p-5 text-sm shadow-card sm:grid-cols-2">
             <dt className="text-foreground-muted">Orgao</dt>
             <dd className="text-foreground">{edital.orgao_nome}</dd>
             <dt className="text-foreground-muted">CNPJ</dt>
@@ -109,6 +107,8 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
             <dd className="tnum text-foreground">{edital.data_fim_propostas ?? "—"}</dd>
             <dt className="text-foreground-muted">Fonte</dt>
             <dd className="text-foreground">{edital.fonte}</dd>
+            <dt className="text-foreground-muted">Situação</dt>
+            <dd className="text-foreground">{edital.situacao_compra ?? "—"}</dd>
           </dl>
 
           <a
@@ -118,18 +118,7 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
             className="inline-flex w-fit items-center gap-1.5 text-sm text-primary-ink hover:underline"
           >
             Ver na fonte original
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              className="h-3.5 w-3.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+            <ExternalLink aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
           </a>
 
           <section>
@@ -147,19 +136,8 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
                       rel="noreferrer"
                       className="flex items-center gap-2 p-3 text-sm text-primary-ink transition-colors hover:bg-muted/50"
                     >
-                      <svg
-                        aria-hidden
-                        viewBox="0 0 24 24"
-                        className="h-4 w-4 shrink-0 text-foreground-muted"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14 3v5h5M6 3h8l5 5v13H6z" />
-                      </svg>
-                      {arquivo.tipo} (arquivo #{arquivo.id})
+                      <FileText aria-hidden className="h-4 w-4 shrink-0 text-foreground-muted" strokeWidth={1.5} />
+                      {LABELS_TIPO_ARQUIVO[arquivo.tipo] ?? arquivo.tipo} (arquivo #{arquivo.id})
                     </a>
                   </li>
                 ))}

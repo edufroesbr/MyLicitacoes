@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Search } from "lucide-react";
 import type { FiltrosEditais } from "@/lib/api";
 
 interface Props {
@@ -40,18 +41,11 @@ export default function Filtros({ filtros, onChange }: Props) {
       }}
     >
       <div className="relative min-w-[13rem] flex-1">
-        <svg
+        <Search
           aria-hidden
-          viewBox="0 0 24 24"
           className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.2-3.2" />
-        </svg>
+          strokeWidth={2}
+        />
         <input
           className={`${campo} w-full pl-8`}
           placeholder="Buscar no objeto do edital..."
@@ -88,6 +82,16 @@ export default function Filtros({ filtros, onChange }: Props) {
         <option value="lido">Lido</option>
         <option value="arquivado">Arquivado</option>
         <option value="oportunidade">Oportunidade</option>
+      </select>
+      <select
+        className={campo}
+        value={filtros.fase_proposta ?? ""}
+        onChange={(e) => aplicar({ fase_proposta: e.target.value || undefined })}
+      >
+        <option value="">Fase da proposta (todas)</option>
+        <option value="a_receber">A receber</option>
+        <option value="recebendo">Recebendo proposta</option>
+        <option value="encerrada">Encerrada</option>
       </select>
       <select
         className={campo}

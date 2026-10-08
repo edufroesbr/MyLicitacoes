@@ -24,6 +24,7 @@ export interface EditalDetalhe extends EditalResumo {
   municipio: string | null;
   motivo_relevancia: string;
   url_origem: string;
+  situacao_compra: string | null;
   arquivos: ArquivoResumo[];
 }
 

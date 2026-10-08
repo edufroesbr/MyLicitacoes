@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Inbox, SearchX } from "lucide-react";
 import { listarEditais, type FiltrosEditais } from "@/lib/api";
 import type { EditalResumo, Pagina } from "@/lib/types";
 import { BadgePrazo, BadgeScore } from "@/components/Badge";
@@ -85,19 +86,11 @@ export default function CaixaPage() {
 
       {vazio && (
         <div className="rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-          <svg
-            aria-hidden
-            viewBox="0 0 24 24"
-            className="mx-auto h-8 w-8 text-foreground-muted/60"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 5h16v14H4z" />
-            <path d="M4 9h16M9 5v14" />
-          </svg>
+          {temFiltro(filtros) ? (
+            <SearchX aria-hidden className="mx-auto h-8 w-8 text-foreground-muted/60" strokeWidth={1.5} />
+          ) : (
+            <Inbox aria-hidden className="mx-auto h-8 w-8 text-foreground-muted/60" strokeWidth={1.5} />
+          )}
           <p className="mt-3 font-display text-lg text-foreground">
             {temFiltro(filtros) ? "Nada corresponde a estes filtros" : "A caixa esta vazia"}
           </p>
