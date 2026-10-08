@@ -37,6 +37,7 @@ class EditalDetalhe(EditalResumo):
     municipio: str | None
     motivo_relevancia: str
     url_origem: str
+    situacao_compra: str | None = None
     arquivos: list[ArquivoResumo] = []
 
 

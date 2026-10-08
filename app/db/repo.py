@@ -21,6 +21,7 @@ def upsert_editais(
                 uf=e.uf, municipio=e.municipio, modalidade=e.modalidade,
                 valor_estimado=e.valor_estimado, data_publicacao=e.data_publicacao,
                 data_abertura=e.data_abertura, data_fim_propostas=e.data_fim_propostas,
+                situacao_compra=e.situacao_compra,
                 score_relevancia=sc.valor, motivo_relevancia=",".join(sc.termos),
                 status="novo", url_origem=e.url_origem,
                 capturado_em=datetime.now(timezone.utc))

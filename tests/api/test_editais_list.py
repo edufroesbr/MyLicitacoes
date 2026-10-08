@@ -1,11 +1,12 @@
 import os, pytest
 pytestmark = pytest.mark.skipif(not os.getenv("MYLIC_DATABASE_URL"), reason="sem Postgres")
 from fastapi.testclient import TestClient
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 
-def _seed(objeto, uf="AM", score=0.9, status="novo", chave="k1"):
+def _seed(objeto, uf="AM", score=0.9, status="novo", chave="k1",
+          data_abertura=None, data_fim_propostas=None):
     from app.db.engine import make_session
     from app.db.models import EditalRow
     S = make_session(os.environ["MYLIC_DATABASE_URL"])
@@ -13,6 +14,7 @@ def _seed(objeto, uf="AM", score=0.9, status="novo", chave="k1"):
         s.add(EditalRow(fonte="pncp", chave_natural=chave, hash_conteudo="h", objeto=objeto,
                         orgao_nome="Org", orgao_cnpj="0", uf=uf, modalidade="Pregao",
                         valor_estimado=Decimal("1"), data_publicacao=date(2026, 9, 1),
+                        data_abertura=data_abertura, data_fim_propostas=data_fim_propostas,
                         score_relevancia=score, status=status, url_origem="x",
                         capturado_em=datetime.now(timezone.utc)))
         s.commit()
@@ -37,3 +39,40 @@ def test_paginacao_invalida_devolve_422():
     assert c.get("/editais", params={"pagina": 0}).status_code == 422
     assert c.get("/editais", params={"pagina": -1}).status_code == 422
     assert c.get("/editais", params={"tamanho": -5}).status_code == 422
+
+
+def test_busca_ignora_acento():
+    _seed("Registro de preços para AQUISIÇÃO de materiais de expediente", uf="MG", chave="acento1")
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get("/editais", params={"q": "aquisicao"})
+    assert r.status_code == 200
+    assert any("AQUISIÇÃO" in e["objeto"] for e in r.json()["itens"])
+
+
+def test_filtro_fase_proposta():
+    hoje = date.today()
+    _seed("em recebimento de propostas", chave="fase-recebendo",
+          data_abertura=hoje - timedelta(days=1), data_fim_propostas=hoje + timedelta(days=5))
+    _seed("propostas encerradas", chave="fase-encerrada",
+          data_abertura=hoje - timedelta(days=10), data_fim_propostas=hoje - timedelta(days=1))
+    _seed("ainda nao abriu", chave="fase-a-receber",
+          data_abertura=hoje + timedelta(days=3), data_fim_propostas=hoje + timedelta(days=10))
+    from app.api.main import app
+    c = TestClient(app)
+
+    r = c.get("/editais", params={"fase_proposta": "recebendo"})
+    objs = [e["objeto"] for e in r.json()["itens"]]
+    assert "em recebimento de propostas" in objs
+    assert "propostas encerradas" not in objs
+    assert "ainda nao abriu" not in objs
+
+    r = c.get("/editais", params={"fase_proposta": "encerrada"})
+    objs = [e["objeto"] for e in r.json()["itens"]]
+    assert "propostas encerradas" in objs
+    assert "em recebimento de propostas" not in objs
+
+    r = c.get("/editais", params={"fase_proposta": "a_receber"})
+    objs = [e["objeto"] for e in r.json()["itens"]]
+    assert "ainda nao abriu" in objs
+    assert "em recebimento de propostas" not in objs

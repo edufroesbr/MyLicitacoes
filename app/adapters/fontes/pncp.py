@@ -1,4 +1,5 @@
 # app/adapters/fontes/pncp.py
+import time
 from datetime import date, datetime
 from decimal import Decimal
 from app.adapters.http_client import make_client
@@ -6,6 +7,14 @@ from app.domain.edital import Edital, Fonte, ArquivoRef, TipoArquivo
 
 MODALIDADES = (6, 7, 8, 9, 12)  # confirmado: modalidadeId=8 (Dispensa) no fixture real
 TAMANHO_PAGINA = 50  # maximo aceite pelo PNCP (500 devolve 400 "Tamanho de pagina invalido")
+PAUSA_ENTRE_REQUESTS = 0.4  # segundos; reduz a chance de 429 por rajada (confirmado ao vivo)
+
+TIPOS_DOCUMENTO = {
+    2: TipoArquivo.EDITAL,
+    4: TipoArquivo.TR,
+    6: TipoArquivo.PB,
+    7: TipoArquivo.ETP,
+}  # tipoDocumentoId -> TipoArquivo (confirmado ao vivo contra /pncp/v1/.../arquivos); demais ids caem em OUTRO
 
 
 def _d(s: str | None) -> date | None:
@@ -15,6 +24,10 @@ def _d(s: str | None) -> date | None:
         return datetime.fromisoformat(str(s).replace("Z", "+00:00")).date()
     except (ValueError, TypeError):
         return None
+
+
+def _mapear_tipo_documento(item: dict) -> TipoArquivo:
+    return TIPOS_DOCUMENTO.get(item.get("tipoDocumentoId"), TipoArquivo.OUTRO)
 
 
 def _parse_item(item: dict) -> Edital:
@@ -38,6 +51,7 @@ def _parse_item(item: dict) -> Edital:
         data_abertura=_d(item.get("dataAberturaProposta")),
         data_fim_propostas=_d(item.get("dataEncerramentoProposta")),
         url_origem=f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{seq}",
+        situacao_compra=item.get("situacaoCompraNome"),
     )
 
 
@@ -72,6 +86,7 @@ class FontePncp:
                             # PNCP rejeita tamanhoPagina > 50 (400 "Tamanho de pagina invalido").
                             "pagina": pagina, "tamanhoPagina": TAMANHO_PAGINA,
                         })
+                        time.sleep(PAUSA_ENTRE_REQUESTS)
                         if r.status_code == 204:
                             break
                         r.raise_for_status()
@@ -102,7 +117,7 @@ class FontePncp:
             r.raise_for_status()
             refs = []
             for a in r.json():
-                refs.append(ArquivoRef(tipo=TipoArquivo.EDITAL,
+                refs.append(ArquivoRef(tipo=_mapear_tipo_documento(a),
                                        url=a.get("url") or a.get("uri") or "",
                                        nome=a.get("titulo") or a.get("nomeArquivo") or "arquivo"))
             return refs

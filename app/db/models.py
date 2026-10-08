@@ -22,6 +22,7 @@ class EditalRow(Base):
     data_publicacao: Mapped[datetime | None] = mapped_column(Date, index=True)
     data_abertura: Mapped[datetime | None] = mapped_column(Date)
     data_fim_propostas: Mapped[datetime | None] = mapped_column(Date)
+    situacao_compra: Mapped[str | None] = mapped_column(String(60))
     score_relevancia: Mapped[float] = mapped_column(Float, default=0.0, index=True)
     motivo_relevancia: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="novo", index=True)

@@ -22,6 +22,7 @@ class TipoArquivo(StrEnum):
     TR = "tr"
     ETP = "etp"
     PB = "pb"
+    OUTRO = "outro"
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ class Edital:
     data_fim_propostas: date | None
     url_origem: str
     texto_extra: str = ""
+    situacao_compra: str | None = None
 
 
 @dataclass(frozen=True)
