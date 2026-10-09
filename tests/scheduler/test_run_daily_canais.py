@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from app.config import Settings
 from app.db.models import PerfilRow
-from app.scheduler.run_daily import montar_canais
+from app.scheduler.run_daily import montar_canais, nomes_canais
 from app.adapters.notificacao.portal import PortalDigest
 from app.adapters.notificacao.email import EmailDigest
 from app.adapters.notificacao.telegram import TelegramDigest
@@ -69,3 +69,15 @@ def test_perfil_ligado_mas_sem_infra_no_settings_nao_gera_canal():
     canais = montar_canais(perfil, s, session_factory=lambda: None)
     assert len(canais) == 1
     assert isinstance(canais[0], PortalDigest)
+
+
+def test_nomes_canais_so_portal():
+    canais = montar_canais(None, _settings_com_infra(), session_factory=lambda: None)
+    assert nomes_canais(canais) == ["portal"]
+
+
+def test_nomes_canais_com_email_e_telegram_ligados():
+    perfil = _perfil(receber_email=True, email_digest="eu@exemplo.com",
+                      receber_telegram=True, telegram_chat_id="chat-perfil")
+    canais = montar_canais(perfil, _settings_com_infra(), session_factory=lambda: None)
+    assert nomes_canais(canais) == ["portal", "telegram", "email"]

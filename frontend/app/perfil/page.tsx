@@ -10,6 +10,7 @@ const campoCls =
 
 export default function PerfilPage() {
   const [carregando, setCarregando] = useState(true);
+  const [carregado, setCarregado] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
@@ -32,7 +33,10 @@ export default function PerfilPage() {
     setCarregando(true);
     setErro(null);
     obterPerfil()
-      .then(popular)
+      .then((p) => {
+        popular(p);
+        setCarregado(true);
+      })
       .catch((e: unknown) => setErro(e instanceof Error ? e.message : String(e)))
       .finally(() => setCarregando(false));
   }, []);
@@ -89,7 +93,7 @@ export default function PerfilPage() {
         </div>
       )}
 
-      {!carregando && (
+      {!carregando && carregado && (
         <form
           onSubmit={submeter}
           className="flex flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-card"

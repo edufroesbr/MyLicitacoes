@@ -33,6 +33,16 @@ def montar_canais(perfil: PerfilRow | None, s: Settings, session_factory) -> lis
     return canais
 
 
+_NOMES_CANAL = {PortalDigest: "portal", TelegramDigest: "telegram", EmailDigest: "email"}
+
+
+def nomes_canais(canais: list) -> list[str]:
+    """Deriva os nomes dos canais efetivamente incluidos no digest desta
+    execucao, a partir dos objetos ja construidos por montar_canais. Usado
+    so para log - nao influencia o envio."""
+    return [_NOMES_CANAL.get(type(c), type(c).__name__) for c in canais]
+
+
 def main() -> None:
     s = Settings()
     Session = make_session(s.database_url)
@@ -51,7 +61,8 @@ def main() -> None:
                        ArmazenamentoDisco(s.pdf_dir), canais, baixar,
                        s.janela_inicial_dias, s.score_piso)
     print(f"novos={res.novos} relevantes={res.relevantes} downloads={res.downloads} "
-          f"fontes_falha={res.fontes_falha} fontes_zero={res.fontes_zero}")
+          f"fontes_falha={res.fontes_falha} fontes_zero={res.fontes_zero} "
+          f"canais_digest={nomes_canais(canais)}")
 
 
 if __name__ == "__main__":
