@@ -52,10 +52,11 @@ export default function ProjetosPage() {
     setErro(null);
     try {
       await apagarProjeto(apagando.id);
-      setApagando(null);
       carregar();
     } catch (e: unknown) {
       setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setApagando(null);
     }
   }
 
