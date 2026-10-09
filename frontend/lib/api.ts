@@ -4,6 +4,7 @@ import type {
   EditalDetalhe,
   EditalResumo,
   Pagina,
+  Perfil,
   Projeto,
   StatusCaixa,
 } from "./types";
@@ -83,4 +84,18 @@ export async function atualizarProjeto(id: number, p: Partial<Projeto>): Promise
 export async function apagarProjeto(id: number): Promise<void> {
   const r = await fetch(`${API_URL}/projetos-interesse/${id}`, { method: "DELETE" });
   if (!r.ok) throw new Error(`API ${r.status}`);
+}
+
+export async function obterPerfil(): Promise<Perfil> {
+  return j(await fetch(`${API_URL}/perfil`, { cache: "no-store" }));
+}
+
+export async function atualizarPerfil(p: Partial<Perfil>): Promise<Perfil> {
+  return j(
+    await fetch(`${API_URL}/perfil`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(p),
+    })
+  );
 }

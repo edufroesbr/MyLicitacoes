@@ -30,7 +30,7 @@ test("detalhe abre com link do PDF que resolve de verdade", async ({ page, reque
   await page.getByRole("link", { name: /Servico de clipping e monitoramento de publicacoes/ }).click();
   await expect(page).toHaveURL(/\/editais\/\d+$/);
 
-  const linkArquivo = page.getByRole("link", { name: /Edital \(arquivo #/ });
+  const linkArquivo = page.getByRole("link", { name: /Edital\s+arquivo #/ });
   await expect(linkArquivo).toBeVisible();
   const href = await linkArquivo.getAttribute("href");
   expect(href).toContain("/arquivo/");
@@ -70,7 +70,7 @@ test("filtros e busca restringem a lista corretamente", async ({ page }) => {
 
   await page.getByPlaceholder("UF").fill("");
   await page.getByRole("button", { name: "Buscar" }).click();
-  await page.getByRole("combobox").nth(0).selectOption("lido");
+  await page.getByRole("combobox").nth(1).selectOption("lido");
   await expect(page.locator("li", { hasText: "Servico de clipping" })).toBeVisible();
   await expect(page.locator("li", { hasText: "Aquisicao de mobiliario" })).toHaveCount(0);
 });

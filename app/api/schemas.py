@@ -56,3 +56,22 @@ class ProjetoOut(ProjetoIn):
     id: int
     criado_em: datetime
     model_config = {"from_attributes": True}
+
+
+class PerfilSchema(BaseModel):
+    id: int
+    nome: str
+    email_digest: str | None
+    telegram_chat_id: str | None
+    receber_email: bool
+    receber_telegram: bool
+    atualizado_em: datetime
+    model_config = {"from_attributes": True}
+
+
+class PerfilUpdate(BaseModel):
+    nome: str
+    email_digest: str | None
+    telegram_chat_id: str | None
+    receber_email: bool
+    receber_telegram: bool

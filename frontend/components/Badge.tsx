@@ -3,6 +3,29 @@ import { CheckCircle2, CircleDot, Clock, MinusCircle } from "lucide-react";
 const pill =
   "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tnum";
 
+export function Chip({
+  children,
+  tone = "muted",
+  className = "",
+  ...props
+}: {
+  children: React.ReactNode;
+  tone?: "muted" | "primary" | "danger";
+  className?: string;
+} & React.HTMLAttributes<HTMLSpanElement>) {
+  const toneCls =
+    tone === "primary"
+      ? "bg-primary/12 text-primary-ink"
+      : tone === "danger"
+        ? "bg-danger/12 text-danger"
+        : "bg-muted text-foreground-muted";
+  return (
+    <span className={`${pill} ${toneCls} ${className}`} {...props}>
+      {children}
+    </span>
+  );
+}
+
 export function BadgeScore({ score }: { score: number }) {
   const tier =
     score >= 0.67

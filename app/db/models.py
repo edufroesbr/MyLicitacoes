@@ -75,3 +75,14 @@ class DigestLogRow(Base):
     canais: Mapped[str] = mapped_column(String(120), default="")
     enviado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     resumo: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class PerfilRow(Base):
+    __tablename__ = "perfil"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(120), default="")
+    email_digest: Mapped[str | None] = mapped_column(String(200))
+    telegram_chat_id: Mapped[str | None] = mapped_column(String(60))
+    receber_email: Mapped[bool] = mapped_column(Boolean, default=False)
+    receber_telegram: Mapped[bool] = mapped_column(Boolean, default=False)
+    atualizado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Inbox, Radar, Target } from "lucide-react";
+import { Inbox, Radar, Settings, Target } from "lucide-react";
 
 const LINKS = [
   { href: "/caixa", rotulo: "Caixa", Icone: Inbox },
   { href: "/digest", rotulo: "Digest", Icone: Radar },
   { href: "/projetos", rotulo: "Projetos", Icone: Target },
+  { href: "/perfil", rotulo: "Configurações", Icone: Settings },
 ];
 
 export default function NavBar() {
