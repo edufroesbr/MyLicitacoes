@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Loader2 } from "lucide-react";
 import type { Projeto } from "@/lib/types";
 
 export interface DadosProjetoForm {
@@ -91,9 +92,10 @@ export default function ProjetoForm({ projeto, salvando, onSalvar, onCancelar }:
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           disabled={salvando}
         >
+          {salvando && <Loader2 aria-hidden className="h-4 w-4 animate-spin" strokeWidth={2} />}
           {salvando ? "A guardar..." : "Guardar"}
         </button>
         <button

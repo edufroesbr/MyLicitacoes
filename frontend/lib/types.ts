@@ -57,3 +57,13 @@ export interface Digest {
   resumo: ResumoDigest;
   destaques: EditalResumo[];
 }
+
+export interface Perfil {
+  id: number;
+  nome: string;
+  email_digest: string | null;
+  telegram_chat_id: string | null;
+  receber_email: boolean;
+  receber_telegram: boolean;
+  atualizado_em: string;
+}
