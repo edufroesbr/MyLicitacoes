@@ -19,6 +19,12 @@ export interface ArquivoResumo {
   tipo: string;
 }
 
+export interface ArquivoCatalogo {
+  tipo: string;
+  nome: string;
+  url: string;
+}
+
 export interface EditalDetalhe extends EditalResumo {
   orgao_cnpj: string;
   municipio: string | null;
@@ -26,6 +32,7 @@ export interface EditalDetalhe extends EditalResumo {
   url_origem: string;
   situacao_compra: string | null;
   arquivos: ArquivoResumo[];
+  arquivos_catalogo: ArquivoCatalogo[];
 }
 
 export interface Pagina<T> {

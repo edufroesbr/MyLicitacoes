@@ -3,10 +3,12 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy import select, func, or_
+from app.adapters.fontes.pncp import FontePncp
 from app.api.deps import get_session
-from app.api.schemas import EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
+from app.api.schemas import ArquivoCatalogo, EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
 from app.config import Settings
 from app.db.models import EditalRow, ArquivoEditalRow
+from app.domain.edital import Edital, Fonte
 
 router = APIRouter()
 
@@ -92,7 +94,28 @@ def mudar_status(edital_id: int, body: MudarStatus, session=Depends(get_session)
 def _detalhe(row):
     d = EditalDetalhe.model_validate(row)
     d.arquivos = [ArquivoResumo.model_validate(a) for a in row.arquivos]
+    if not d.arquivos and row.fonte == Fonte.PNCP.value:
+        d.arquivos_catalogo = _catalogo_ao_vivo(row)
     return d
+
+
+def _catalogo_ao_vivo(row) -> list[ArquivoCatalogo]:
+    """Editais fora do piso de relevancia nunca disparam o download
+    automatico (app/scheduler/orquestrador.py so baixa pros relevantes) -
+    mas o catalogo de documentos na fonte existe de verdade. Busca ao vivo
+    so quando alguem abre o detalhe (1 edital por vez, nao em lote), e
+    nunca quebra o detalhe se a fonte estiver fora do ar."""
+    e = Edital(fonte=Fonte.PNCP, chave_natural=row.chave_natural, objeto=row.objeto,
+               orgao_nome=row.orgao_nome, orgao_cnpj=row.orgao_cnpj, uf=row.uf,
+               municipio=row.municipio, modalidade=row.modalidade,
+               valor_estimado=row.valor_estimado, data_publicacao=row.data_publicacao,
+               data_abertura=row.data_abertura, data_fim_propostas=row.data_fim_propostas,
+               url_origem=row.url_origem)
+    try:
+        return [ArquivoCatalogo(tipo=a.tipo.value, nome=a.nome, url=a.url)
+                for a in FontePncp().listar_arquivos(e)]
+    except Exception:
+        return []
 
 
 @router.get("/editais/{edital_id}/arquivo/{arquivo_id}")

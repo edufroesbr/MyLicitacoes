@@ -27,3 +27,38 @@ def test_detalhe_e_patch_status():
     r = c.patch(f"/editais/{eid}", json={"status": "oportunidade"})
     assert r.status_code == 200 and r.json()["status"] == "oportunidade"
     assert c.patch(f"/editais/{eid}", json={"status": "xpto"}).status_code == 422
+
+
+def test_detalhe_busca_catalogo_ao_vivo_quando_sem_arquivo_local(monkeypatch):
+    """Regressao: edital fora do piso de relevancia nunca tem arquivo
+    baixado automaticamente, mas o catalogo na fonte existe de verdade -
+    o detalhe deve busca-lo ao vivo em vez de so mostrar 'nenhum arquivo'."""
+    from app.domain.edital import ArquivoRef, TipoArquivo
+    import app.api.editais as editais_mod
+
+    monkeypatch.setattr(editais_mod.FontePncp, "listar_arquivos", lambda self, e: [
+        ArquivoRef(TipoArquivo.EDITAL, "http://pncp.fake/e.pdf", "Edital.pdf"),
+    ])
+    eid = _seed_um("det-catalogo-1")
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get(f"/editais/{eid}")
+    assert r.status_code == 200
+    assert r.json()["arquivos"] == []
+    assert r.json()["arquivos_catalogo"] == [
+        {"tipo": "edital", "nome": "Edital.pdf", "url": "http://pncp.fake/e.pdf"}
+    ]
+
+
+def test_detalhe_nao_quebra_se_fonte_estiver_fora_do_ar(monkeypatch):
+    import app.api.editais as editais_mod
+
+    def explode(self, e):
+        raise RuntimeError("pncp fora do ar")
+    monkeypatch.setattr(editais_mod.FontePncp, "listar_arquivos", explode)
+    eid = _seed_um("det-catalogo-2")
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get(f"/editais/{eid}")
+    assert r.status_code == 200
+    assert r.json()["arquivos_catalogo"] == []

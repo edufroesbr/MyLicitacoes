@@ -118,7 +118,7 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
 
           <section>
             <h2 className="mb-2 text-sm font-semibold text-foreground">Arquivos</h2>
-            {edital.arquivos.length === 0 && (
+            {edital.arquivos.length === 0 && edital.arquivos_catalogo.length === 0 && (
               <p className="text-sm text-foreground-muted">Nenhum arquivo capturado.</p>
             )}
             {edital.arquivos.length > 0 && (
@@ -138,6 +138,29 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
                   </li>
                 ))}
               </ul>
+            )}
+            {edital.arquivos.length === 0 && edital.arquivos_catalogo.length > 0 && (
+              <>
+                <p className="mb-2 text-xs text-foreground-muted">
+                  Catalogados na fonte, não baixados por nós (edital fora do piso de relevância) — abre direto no PNCP.
+                </p>
+                <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
+                  {edital.arquivos_catalogo.map((arquivo, i) => (
+                    <li key={i} className="border-b border-border last:border-0">
+                      <a
+                        href={arquivo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 p-3 text-sm text-primary-ink transition-colors hover:bg-muted/50"
+                      >
+                        <FileText aria-hidden className="h-4 w-4 shrink-0 text-foreground-muted" strokeWidth={1.5} />
+                        <Chip>{LABELS_TIPO_ARQUIVO[arquivo.tipo] ?? arquivo.tipo}</Chip>
+                        <span className="truncate">{arquivo.nome}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </section>
 

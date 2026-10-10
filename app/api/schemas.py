@@ -32,6 +32,15 @@ class ArquivoResumo(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ArquivoCatalogo(BaseModel):
+    """Documento conhecido na fonte original mas nao baixado/guardado por
+    nos (editais fora do piso de relevancia nao disparam download
+    automatico) - o link aponta direto pra fonte, nao pro nosso proxy."""
+    tipo: str
+    nome: str
+    url: str
+
+
 class EditalDetalhe(EditalResumo):
     orgao_cnpj: str
     municipio: str | None
@@ -39,6 +48,7 @@ class EditalDetalhe(EditalResumo):
     url_origem: str
     situacao_compra: str | None = None
     arquivos: list[ArquivoResumo] = []
+    arquivos_catalogo: list[ArquivoCatalogo] = []
 
 
 class MudarStatus(BaseModel):
