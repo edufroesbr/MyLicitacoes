@@ -40,7 +40,12 @@ def listar(session=Depends(get_session), uf: str | None = None, modalidade: str 
     if modalidade: cond.append(EditalRow.modalidade == modalidade)
     if fonte: cond.append(EditalRow.fonte == fonte)
     if status: cond.append(EditalRow.status == status)
-    if q: cond.append(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{_escapar_like(q)}%"), escape="\\"))
+    if q:
+        # cada palavra exigida separadamente (E, nao a frase exata) - "material
+        # escolar" deve achar "materiais escolares", nao so um match literal
+        # idêntico, que quase nunca existe no texto real do objeto.
+        for termo in q.split():
+            cond.append(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{_escapar_like(termo)}%"), escape="\\"))
     if fase_proposta:
         hoje = date.today()
         if fase_proposta == "a_receber":
