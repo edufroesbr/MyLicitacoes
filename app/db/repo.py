@@ -53,19 +53,27 @@ def persistir_arquivo(session, edital_id: int, arq: ArquivoRef, caminho: str, co
 
 
 def upsert_contratos(session, contratos: list[Contrato]) -> int:
+    pares = {(c.fonte, c.chave_natural_compra) for c in contratos if c.chave_natural_compra}
+    editais_por_chave: dict[tuple[str, str], int] = {}
+    if pares:
+        fontes = {f for f, _ in pares}
+        chaves = {k for _, k in pares}
+        rows = session.execute(select(EditalRow.fonte, EditalRow.chave_natural, EditalRow.id).where(
+            EditalRow.fonte.in_(fontes), EditalRow.chave_natural.in_(chaves))).all()
+        editais_por_chave = {(f, k): i for f, k, i in rows}
+
     vinculados = 0
     for c in contratos:
         if not c.chave_natural_compra:
             continue
-        edital = session.scalar(select(EditalRow).where(
-            EditalRow.fonte == c.fonte, EditalRow.chave_natural == c.chave_natural_compra))
-        if edital is None:
+        edital_id = editais_por_chave.get((c.fonte, c.chave_natural_compra))
+        if edital_id is None:
             continue  # sem edital correspondente na base - descarta, nao e erro
         row = session.scalar(select(ContratoRow).where(
             ContratoRow.fonte == c.fonte, ContratoRow.chave_natural == c.chave_natural))
         if row is None:
             row = ContratoRow(
-                fonte=c.fonte, chave_natural=c.chave_natural, edital_id=edital.id,
+                fonte=c.fonte, chave_natural=c.chave_natural, edital_id=edital_id,
                 numero_contrato=c.numero_contrato, fornecedor_nome=c.fornecedor_nome,
                 fornecedor_documento=c.fornecedor_documento, valor_inicial=c.valor_inicial,
                 valor_global=c.valor_global, data_assinatura=c.data_assinatura,
