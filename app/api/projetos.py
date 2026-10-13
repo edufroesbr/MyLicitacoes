@@ -58,7 +58,7 @@ def resumo(pid: int, session=Depends(get_session)):
             .where(*cond)).subquery()
     contratos_quantidade = session.scalar(select(func.count()).select_from(base)) or 0
     contratos_valor_total = session.scalar(select(func.coalesce(func.sum(base.c.valor_global), 0)))
-    contratos_valor_medio = session.scalar(select(func.avg(base.c.valor_global)))
+    contratos_valor_medio = session.scalar(select(func.round(func.avg(base.c.valor_global), 2)))
     por_uf = [ResumoUf(uf=uf, quantidade=qtd, valor_total=total or 0)
               for uf, qtd, total in session.execute(
                   select(base.c.uf, func.count(), func.coalesce(func.sum(base.c.valor_global), 0))

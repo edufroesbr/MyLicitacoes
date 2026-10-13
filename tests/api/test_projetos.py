@@ -56,10 +56,12 @@ def test_resumo_projeto():
 
     S = make_session(os.environ["MYLIC_DATABASE_URL"])
     with S() as s:
-        s.add(ContratoRow(fonte="pncp", chave_natural="c-resumo-1", edital_id=eid_ativo,
-                          numero_contrato="1/2026", fornecedor_nome="Forn", fornecedor_documento="0",
-                          valor_global=Decimal("200.00"), data_assinatura=date(2026, 1, 1),
-                          capturado_em=datetime.now(timezone.utc)))
+        valores = ("200.00", "150.00", "150.00")
+        for i, valor in enumerate(valores, start=1):
+            s.add(ContratoRow(fonte="pncp", chave_natural=f"c-resumo-{i}", edital_id=eid_ativo,
+                              numero_contrato=f"{i}/2026", fornecedor_nome="Forn", fornecedor_documento="0",
+                              valor_global=Decimal(valor), data_assinatura=date(2026, 1, 1),
+                              capturado_em=datetime.now(timezone.utc)))
         s.commit()
 
     r = c.get(f"/projetos-interesse/{pid}/resumo")
@@ -67,10 +69,10 @@ def test_resumo_projeto():
     body = r.json()
     assert body["editais_ativos"] == 1
     assert body["editais_encerrados"] == 1
-    assert body["contratos_quantidade"] == 1
-    assert body["contratos_valor_total"] == "200.00"
-    assert Decimal(body["contratos_valor_medio"]) == Decimal("200.00")
-    assert body["por_uf"] == [{"uf": "AM", "quantidade": 1, "valor_total": "200.00"}]
+    assert body["contratos_quantidade"] == 3
+    assert body["contratos_valor_total"] == "500.00"
+    assert body["contratos_valor_medio"] == "166.67"
+    assert body["por_uf"] == [{"uf": "AM", "quantidade": 3, "valor_total": "500.00"}]
 
 
 def test_resumo_projeto_inexistente_404():
