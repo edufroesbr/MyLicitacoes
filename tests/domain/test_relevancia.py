@@ -41,3 +41,15 @@ def test_caso_canonico_lexflow_passa_o_piso_real_com_o_lexico_real():
 def test_caso_irrelevante_nao_passa_o_piso_real_com_o_lexico_real():
     s = classificar_relevancia("aquisição de merenda escolar", "", LEXICO_TIPO_LEXFLOW)
     assert s.valor < PISO_REAL
+
+
+def test_clipagem_e_reconhecida_pelo_lexico_real():
+    """Regressao: edital real (id 369) 'servicos de monitoramento, captacao,
+    clipagem, compilacao...' pontuava 0.0 porque so 'clipping' (anglicismo)
+    estava no lexico - 'clipagem' e o termo de fato usado em editais
+    brasileiros e nunca foi reconhecido."""
+    s = classificar_relevancia(
+        "Contratacao de servicos de monitoramento, captacao, clipagem, "
+        "compilacao, organizacao, analise de sentimento", "", LEXICO_TIPO_LEXFLOW)
+    assert "clipagem" in s.termos
+    assert s.valor > 0.0

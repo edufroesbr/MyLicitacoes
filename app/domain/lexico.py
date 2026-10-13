@@ -4,6 +4,7 @@ from app.domain.relevancia import Lexico
 LEXICO_TIPO_LEXFLOW = Lexico(
     positivos=frozenset({
         "clipping",
+        "clipagem",
         "monitoramento de publicacoes",
         "monitoramento de publicacoes oficiais",
         "recorte de publicacoes",
