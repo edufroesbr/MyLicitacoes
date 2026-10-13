@@ -186,6 +186,22 @@ def test_chave_compra_de_numero_controle_entrada_malformada_devolve_none():
     assert chave_compra_de_numero_controle(None) is None
 
 
+def test_chave_do_edital_e_da_compra_do_contrato_concordam():
+    """Regressao de costura: a chave que _parse_item monta pro edital tem
+    que ser EXATAMENTE a mesma que chave_compra_de_numero_controle deriva
+    do numeroControlePncpCompra do contrato - senao todo contrato e
+    descartado em silencio para sempre (upsert_contratos nunca acha match,
+    e isso e o comportamento "correto" de contrato sem edital, entao
+    nenhum teste existente pegaria essa regressao)."""
+    item = FIX["data"][0]
+    edital = _parse_item(item)
+    cnpj = item["orgaoEntidade"]["cnpj"]
+    ano = item["anoCompra"]
+    seq = item["sequencialCompra"]
+    numero_controle_compra = f"{cnpj}-1-{seq:06d}/{ano}"
+    assert chave_compra_de_numero_controle(numero_controle_compra) == edital.chave_natural
+
+
 _CONTRATO_EXEMPLO = {
     "numeroControlePncpCompra": "13880257000127-1-000062/2026",
     "numeroControlePNCP": "13880257000127-2-000239/2026",
@@ -243,3 +259,18 @@ def test_buscar_contratos_levanta_se_a_chamada_falhar(monkeypatch):
     fonte = pncp_mod.FontePncp("http://fake")
     with pytest.raises(httpx.HTTPStatusError):
         fonte.buscar_contratos(date(2025, 9, 14), date(2025, 9, 15))
+
+
+def test_buscar_contratos_mantem_paginas_ja_coletadas_se_uma_pagina_falhar(monkeypatch):
+    chamadas = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        chamadas["n"] += 1
+        if chamadas["n"] == 1:
+            return httpx.Response(200, json={"data": [_CONTRATO_EXEMPLO], "totalPaginas": 2})
+        return httpx.Response(500)
+
+    monkeypatch.setattr(pncp_mod, "make_client", _client_falso(handler))
+    fonte = pncp_mod.FontePncp("http://fake")
+    out = fonte.buscar_contratos(date(2026, 9, 1), date(2026, 9, 2))
+    assert len(out) == 1  # pagina 1 foi mantida, pagina 2 falhou mas nao derrubou o resultado

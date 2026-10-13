@@ -146,20 +146,27 @@ class FontePncp:
         out: list[Contrato] = []
         di, df = inicio.strftime("%Y%m%d"), fim.strftime("%Y%m%d")
         primeira_chamada = True
+        paginas_ok = 0
         with make_client(self._base_url) as c:
             pagina = 1
             while True:
                 if not primeira_chamada:
                     time.sleep(PAUSA_ENTRE_REQUESTS)
                 primeira_chamada = False
-                r = c.get("/consulta/v1/contratos", params={
-                    "dataInicial": di, "dataFinal": df,
-                    "pagina": pagina, "tamanhoPagina": TAMANHO_PAGINA,
-                })
-                if r.status_code == 204:
-                    break
-                r.raise_for_status()
-                body = r.json()
+                try:
+                    r = c.get("/consulta/v1/contratos", params={
+                        "dataInicial": di, "dataFinal": df,
+                        "pagina": pagina, "tamanhoPagina": TAMANHO_PAGINA,
+                    })
+                    if r.status_code == 204:
+                        break
+                    r.raise_for_status()
+                    body = r.json()
+                except Exception:
+                    if paginas_ok > 0:
+                        break  # ja tem paginas validas - mantem o que coletou, nao propaga
+                    raise  # nenhuma pagina funcionou ainda - erro de verdade, propaga
+                paginas_ok += 1
                 itens = body.get("data") or []
                 for i in itens:
                     try:
