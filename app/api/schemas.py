@@ -41,6 +41,15 @@ class ArquivoCatalogo(BaseModel):
     url: str
 
 
+class ContratoResumo(BaseModel):
+    numero_contrato: str
+    fornecedor_nome: str
+    fornecedor_documento: str
+    valor_global: Decimal | None
+    data_assinatura: date | None
+    model_config = {"from_attributes": True}
+
+
 class EditalDetalhe(EditalResumo):
     orgao_cnpj: str
     municipio: str | None
@@ -49,6 +58,7 @@ class EditalDetalhe(EditalResumo):
     situacao_compra: str | None = None
     arquivos: list[ArquivoResumo] = []
     arquivos_catalogo: list[ArquivoCatalogo] = []
+    contratos: list[ContratoResumo] = []
 
 
 class MudarStatus(BaseModel):
@@ -66,6 +76,21 @@ class ProjetoOut(ProjetoIn):
     id: int
     criado_em: datetime
     model_config = {"from_attributes": True}
+
+
+class ResumoUf(BaseModel):
+    uf: str | None
+    quantidade: int
+    valor_total: Decimal
+
+
+class ResumoProjeto(BaseModel):
+    editais_ativos: int
+    editais_encerrados: int
+    contratos_quantidade: int
+    contratos_valor_total: Decimal
+    contratos_valor_medio: Decimal | None
+    por_uf: list[ResumoUf]
 
 
 class PerfilSchema(BaseModel):
