@@ -62,3 +62,39 @@ def test_detalhe_nao_quebra_se_fonte_estiver_fora_do_ar(monkeypatch):
     r = c.get(f"/editais/{eid}")
     assert r.status_code == 200
     assert r.json()["arquivos_catalogo"] == []
+
+
+def test_detalhe_mostra_contrato_vinculado():
+    from datetime import date, datetime, timezone
+    from decimal import Decimal
+    from app.db.engine import make_session
+    from app.db.models import ContratoRow
+
+    eid = _seed_um("det-contrato-1")
+    S = make_session(os.environ["MYLIC_DATABASE_URL"])
+    with S() as s:
+        s.add(ContratoRow(fonte="pncp", chave_natural="c-det-1", edital_id=eid,
+                          numero_contrato="123/2026", fornecedor_nome="Fornecedor X",
+                          fornecedor_documento="00.000.000/0001-00", valor_global=Decimal("1000.50"),
+                          data_assinatura=date(2026, 1, 10),
+                          capturado_em=datetime.now(timezone.utc)))
+        s.commit()
+
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get(f"/editais/{eid}")
+    assert r.status_code == 200
+    assert r.json()["contratos"] == [{
+        "numero_contrato": "123/2026", "fornecedor_nome": "Fornecedor X",
+        "fornecedor_documento": "00.000.000/0001-00", "valor_global": "1000.50",
+        "data_assinatura": "2026-01-10",
+    }]
+
+
+def test_detalhe_sem_contrato_lista_vazia():
+    eid = _seed_um("det-sem-contrato-1")
+    from app.api.main import app
+    c = TestClient(app)
+    r = c.get(f"/editais/{eid}")
+    assert r.status_code == 200
+    assert r.json()["contratos"] == []

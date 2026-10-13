@@ -25,6 +25,14 @@ export interface ArquivoCatalogo {
   url: string;
 }
 
+export interface ContratoResumo {
+  numero_contrato: string;
+  fornecedor_nome: string;
+  fornecedor_documento: string;
+  valor_global: string | null;
+  data_assinatura: string | null;
+}
+
 export interface EditalDetalhe extends EditalResumo {
   orgao_cnpj: string;
   municipio: string | null;
@@ -33,6 +41,7 @@ export interface EditalDetalhe extends EditalResumo {
   situacao_compra: string | null;
   arquivos: ArquivoResumo[];
   arquivos_catalogo: ArquivoCatalogo[];
+  contratos: ContratoResumo[];
 }
 
 export interface Pagina<T> {
@@ -73,4 +82,19 @@ export interface Perfil {
   receber_email: boolean;
   receber_telegram: boolean;
   atualizado_em: string;
+}
+
+export interface ResumoUf {
+  uf: string | null;
+  quantidade: number;
+  valor_total: string;
+}
+
+export interface ResumoProjeto {
+  editais_ativos: number;
+  editais_encerrados: number;
+  contratos_quantidade: number;
+  contratos_valor_total: string;
+  contratos_valor_medio: string | null;
+  por_uf: ResumoUf[];
 }

@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 import pytest
 from app.domain.edital import Edital, Fonte
+from app.domain.contrato import Contrato
 from app.domain.relevancia import ScoreRelevancia
 from app.domain.dedup import hash_conteudo
 from app.db.engine import make_session
@@ -74,6 +75,48 @@ def test_upsert_atualiza_situacao_e_datas_quando_conteudo_muda():
         row = s.query(EditalRow).filter_by(fonte="pncp", chave_natural="k-refresh-1").one()
         assert row.situacao_compra == "Encerrada"
         assert row.data_fim_propostas == date(2026, 11, 5)
+
+
+def _contrato(chave_natural, chave_natural_compra):
+    return Contrato(
+        fonte="pncp", chave_natural=chave_natural, chave_natural_compra=chave_natural_compra,
+        numero_contrato="219", fornecedor_nome="MARIA FEITOZA DOS SANTOS",
+        fornecedor_documento="44281151000130", valor_inicial=Decimal("28608.00"),
+        valor_global=Decimal("28608.00"), data_assinatura=date(2026, 2, 9),
+        data_publicacao=date(2026, 9, 1), orgao_nome="MUNICIPIO DE XIQUE-XIQUE",
+        orgao_cnpj="13880257000127", uf="BA", municipio="Xique-Xique")
+
+
+def test_upsert_contratos_vincula_a_edital_existente():
+    from app.db.models import ContratoRow
+    Session = make_session(os.environ["MYLIC_DATABASE_URL"])
+    chave_edital = f"13880257000127-2026-{uuid.uuid4().hex[:6]}"
+    with Session() as s:
+        e = _ed(chave_edital)
+        repo.upsert_editais(s, [(e, ScoreRelevancia(0.5, ("clipping",)), hash_conteudo(e))])
+        s.commit()
+
+        c = _contrato(f"ctr-{uuid.uuid4().hex[:8]}", chave_edital)
+        vinculados = repo.upsert_contratos(s, [c])
+        s.commit()
+
+        assert vinculados == 1
+        row = s.query(ContratoRow).filter_by(fonte="pncp", chave_natural=c.chave_natural).one()
+        edital_row = s.query(repo.EditalRow).filter_by(fonte="pncp", chave_natural=chave_edital).one()
+        assert row.edital_id == edital_row.id
+
+
+def test_upsert_contratos_sem_edital_correspondente_nao_cria_linha():
+    from app.db.models import ContratoRow
+    Session = make_session(os.environ["MYLIC_DATABASE_URL"])
+    chave_inexistente = f"00000000000000-2026-{uuid.uuid4().hex[:6]}"
+    with Session() as s:
+        c = _contrato(f"ctr-{uuid.uuid4().hex[:8]}", chave_inexistente)
+        vinculados = repo.upsert_contratos(s, [c])
+        s.commit()
+
+        assert vinculados == 0
+        assert s.query(ContratoRow).filter_by(chave_natural=c.chave_natural).count() == 0
 
 
 def test_ultima_captura_ignora_execucao_com_falha():

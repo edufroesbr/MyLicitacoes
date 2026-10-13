@@ -4,29 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy import select, func, or_
 from app.adapters.fontes.pncp import FontePncp
+from app.api._filtros_projeto import _sem_acento, _escapar_like, condicoes_projeto
 from app.api.deps import get_session
-from app.api.schemas import ArquivoCatalogo, EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
+from app.api.schemas import ArquivoCatalogo, ContratoResumo, EditalResumo, Pagina, EditalDetalhe, ArquivoResumo, MudarStatus
 from app.config import Settings
 from app.db.models import EditalRow, ArquivoEditalRow
 from app.domain.edital import Edital, Fonte
 
 router = APIRouter()
-
-
-def _sem_acento(col):
-    """ILIKE acento-insensitivo via extensao `unaccent` do Postgres (migracao
-    unaccent_extension). A classificacao de relevancia ja ignora acento
-    (app/domain/relevancia.py::_norm) usando uma normalizacao Python separada
-    (unicodedata); as duas podem, em teoria, discordar num caractere Unicode
-    raro - sao motores diferentes, nao ha um unico ponto de verdade."""
-    return func.unaccent(col)
-
-
-def _escapar_like(s: str) -> str:
-    """Escapa os wildcards do LIKE/ILIKE (% e _) para que busca literal nao
-    vire wildcard acidental (ex.: busca por "SRP_2026" nao deve casar com
-    "SRPX2026"). Usar sempre junto com `.ilike(..., escape="\\\\")`."""
-    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 @router.get("/editais", response_model=Pagina)
@@ -64,12 +49,7 @@ def listar(session=Depends(get_session), uf: str | None = None, modalidade: str 
         proj = session.get(ProjetoInteresseRow, projeto_id)
         if proj is None or not proj.ativo:
             raise HTTPException(404, "projeto nao encontrado")
-        if proj.palavras_chave:
-            cond.append(or_(*(_sem_acento(EditalRow.objeto).ilike(_sem_acento(f"%{_escapar_like(p)}%"), escape="\\")
-                               for p in proj.palavras_chave)))
-        f = proj.filtros or {}
-        if f.get("uf"): cond.append(EditalRow.uf == f["uf"])
-        if f.get("modalidade"): cond.append(EditalRow.modalidade == f["modalidade"])
+        cond.extend(condicoes_projeto(proj))
     total = session.scalar(select(func.count()).select_from(EditalRow).where(*cond))
     rows = session.scalars(select(EditalRow).where(*cond)
                            .order_by(EditalRow.score_relevancia.desc(), EditalRow.data_publicacao.desc())
@@ -99,6 +79,7 @@ def mudar_status(edital_id: int, body: MudarStatus, session=Depends(get_session)
 def _detalhe(row):
     d = EditalDetalhe.model_validate(row)
     d.arquivos = [ArquivoResumo.model_validate(a) for a in row.arquivos]
+    d.contratos = [ContratoResumo.model_validate(c) for c in row.contratos]
     if not d.arquivos and row.fonte == Fonte.PNCP.value:
         d.arquivos_catalogo = _catalogo_ao_vivo(row)
     return d

@@ -11,7 +11,7 @@ from app.adapters.notificacao.telegram import TelegramDigest
 from app.adapters.notificacao.email import EmailDigest
 from app.adapters.notificacao.portal import PortalDigest
 from app.adapters.http_client import make_client
-from app.scheduler.orquestrador import executar
+from app.scheduler.orquestrador import executar, executar_contratos
 
 
 def montar_canais(perfil: PerfilRow | None, s: Settings, session_factory) -> list:
@@ -46,7 +46,8 @@ def nomes_canais(canais: list) -> list[str]:
 def main() -> None:
     s = Settings()
     Session = make_session(s.database_url)
-    fontes = [FontePncp(s.pncp_base_url), FonteComprasGov(s.compras_base_url)]
+    fonte_pncp = FontePncp(s.pncp_base_url)
+    fontes = [fonte_pncp, FonteComprasGov(s.compras_base_url)]
 
     def baixar(url: str) -> bytes:
         with make_client("") as c:
@@ -60,9 +61,10 @@ def main() -> None:
         res = executar(sess, fontes, KeywordClassificador(LEXICO_TIPO_LEXFLOW),
                        ArmazenamentoDisco(s.pdf_dir), canais, baixar,
                        s.janela_inicial_dias, s.score_piso)
+        contratos_vinculados = executar_contratos(sess, fonte_pncp, s.janela_inicial_dias)
     print(f"novos={res.novos} relevantes={res.relevantes} downloads={res.downloads} "
           f"fontes_falha={res.fontes_falha} fontes_zero={res.fontes_zero} "
-          f"canais_digest={nomes_canais(canais)}")
+          f"canais_digest={nomes_canais(canais)} contratos_vinculados={contratos_vinculados}")
 
 
 if __name__ == "__main__":

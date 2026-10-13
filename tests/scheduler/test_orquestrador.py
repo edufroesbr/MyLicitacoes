@@ -178,3 +178,53 @@ def test_cada_fonte_recebe_a_sua_propria_janela_incremental(monkeypatch):
 
     assert pncp.janelas_recebidas == [(date(2026, 9, 5), date(2026, 9, 10))]
     assert compras.janelas_recebidas == [(date(2026, 9, 3), date(2026, 9, 10))]
+
+
+class FonteContratosFake:
+    """Fonte fake so com buscar_contratos, pra testar executar_contratos isoladamente."""
+    def __init__(self, contratos=None, explode=False):
+        self._contratos = contratos or []
+        self._explode = explode
+        self.janelas_recebidas = []
+
+    def buscar_contratos(self, inicio, fim):
+        self.janelas_recebidas.append((inicio, fim))
+        if self._explode:
+            raise RuntimeError("pncp contratos caiu")
+        return self._contratos
+
+
+def test_executar_contratos_usa_janela_incremental_quando_ha_captura_anterior(monkeypatch):
+    import app.scheduler.orquestrador as orq
+    monkeypatch.setattr(orq, "upsert_contratos", lambda s, contratos: len(contratos))
+    monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
+    monkeypatch.setattr(orq, "ultima_captura",
+                        lambda s, fonte: datetime(2026, 9, 5, tzinfo=timezone.utc)
+                        if fonte == "pncp_contratos" else None)
+    fonte = FonteContratosFake()
+    vinculados = orq.executar_contratos(SessionFake(), fonte, janela_inicial_dias=7, hoje=date(2026, 9, 10))
+    assert fonte.janelas_recebidas == [(date(2026, 9, 5), date(2026, 9, 10))]
+    assert vinculados == 0
+
+
+def test_executar_contratos_usa_fallback_quando_nunca_capturou(monkeypatch):
+    import app.scheduler.orquestrador as orq
+    monkeypatch.setattr(orq, "upsert_contratos", lambda s, contratos: len(contratos))
+    monkeypatch.setattr(orq, "registar_execucao", lambda *a, **k: None)
+    monkeypatch.setattr(orq, "ultima_captura", lambda s, fonte: None)
+    fonte = FonteContratosFake()
+    orq.executar_contratos(SessionFake(), fonte, janela_inicial_dias=7, hoje=date(2026, 9, 10))
+    assert fonte.janelas_recebidas == [(date(2026, 9, 3), date(2026, 9, 10))]
+
+
+def test_executar_contratos_isola_falha_da_fonte(monkeypatch):
+    import app.scheduler.orquestrador as orq
+    status_registados = []
+    monkeypatch.setattr(orq, "upsert_contratos", lambda s, contratos: len(contratos))
+    monkeypatch.setattr(orq, "registar_execucao",
+                        lambda s, fonte, inicio, fim, lidos, novos, rel, status, erro="": status_registados.append(status))
+    monkeypatch.setattr(orq, "ultima_captura", lambda s, fonte: None)
+    fonte = FonteContratosFake(explode=True)
+    vinculados = orq.executar_contratos(SessionFake(), fonte, janela_inicial_dias=7, hoje=date(2026, 9, 10))
+    assert vinculados == 0
+    assert status_registados == ["falha"]

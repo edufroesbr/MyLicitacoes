@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FolderSearch, Pencil, Plus, Trash2 } from "lucide-react";
+import { BarChart3, FolderSearch, Pencil, Plus, Trash2 } from "lucide-react";
 import { apagarProjeto, atualizarProjeto, criarProjeto, listarProjetos } from "@/lib/api";
 import type { Projeto } from "@/lib/types";
 import ProjetoForm, { type DadosProjetoForm } from "@/components/ProjetoForm";
@@ -146,6 +147,13 @@ export default function ProjetosPage() {
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">
+                <Link
+                  href={`/projetos/${p.id}`}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                >
+                  <BarChart3 aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                  Resumo
+                </Link>
                 <button
                   className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
                   onClick={() => {

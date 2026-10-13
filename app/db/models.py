@@ -30,6 +30,8 @@ class EditalRow(Base):
     capturado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     arquivos: Mapped[list["ArquivoEditalRow"]] = relationship(
         back_populates="edital", cascade="all, delete-orphan")
+    contratos: Mapped[list["ContratoRow"]] = relationship(
+        back_populates="edital", cascade="all, delete-orphan")
 
 
 class ArquivoEditalRow(Base):
@@ -41,6 +43,24 @@ class ArquivoEditalRow(Base):
     hash: Mapped[str] = mapped_column(String(64), default="")
     baixado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     edital: Mapped[EditalRow] = relationship(back_populates="arquivos")
+
+
+class ContratoRow(Base):
+    __tablename__ = "contrato"
+    __table_args__ = (UniqueConstraint("fonte", "chave_natural", name="uq_contrato_fonte_chave"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fonte: Mapped[str] = mapped_column(String(20), index=True)
+    chave_natural: Mapped[str] = mapped_column(String(200))
+    edital_id: Mapped[int] = mapped_column(ForeignKey("edital.id", ondelete="CASCADE"), index=True)
+    numero_contrato: Mapped[str] = mapped_column(String(60), default="")
+    fornecedor_nome: Mapped[str] = mapped_column(String(300), default="")
+    fornecedor_documento: Mapped[str] = mapped_column(String(20), default="")
+    valor_inicial: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    valor_global: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    data_assinatura: Mapped[datetime | None] = mapped_column(Date)
+    data_publicacao: Mapped[datetime | None] = mapped_column(Date)
+    capturado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    edital: Mapped["EditalRow"] = relationship(back_populates="contratos")
 
 
 class ProjetoInteresseRow(Base):

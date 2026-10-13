@@ -164,6 +164,28 @@ export default function DetalheEditalPage({ params }: { params: Promise<{ id: st
             )}
           </section>
 
+          {edital.contratos.length > 0 && (
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-foreground">Contrato</h2>
+              <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
+                {edital.contratos.map((c, i) => (
+                  <li key={i} className="border-b border-border p-3 last:border-0">
+                    <div className="text-sm text-foreground">{c.fornecedor_nome}</div>
+                    <div className="text-xs text-foreground-muted">
+                      CNPJ/CPF {c.fornecedor_documento} · contrato nº {c.numero_contrato}
+                    </div>
+                    <div className="tnum mt-1 text-sm text-foreground">
+                      {c.valor_global ?? "—"}
+                      {c.data_assinatura && (
+                        <span className="text-foreground-muted"> · assinado em {c.data_assinatura}</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <AcoesStatus editalId={edital.id} statusAtual={edital.status} onMudou={aoMudarStatus} />
         </article>
       )}

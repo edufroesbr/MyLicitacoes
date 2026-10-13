@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from app.domain.dedup import deduplicar, hash_conteudo
 from app.domain.digest import montar_digest
-from app.db.repo import upsert_editais, persistir_arquivo, registar_execucao, ultima_captura
+from app.db.repo import upsert_editais, persistir_arquivo, registar_execucao, ultima_captura, upsert_contratos
 
 
 @dataclass
@@ -72,3 +72,19 @@ def executar(session, fontes, classificador, armazenamento, canais,
         except Exception:
             pass  # canal em baixo nao impede os restantes
     return res
+
+
+def executar_contratos(session, fonte_pncp, janela_inicial_dias: int, hoje: date | None = None) -> int:
+    hoje = hoje or date.today()
+    uc = ultima_captura(session, "pncp_contratos")
+    inicio = uc.date() if uc else hoje - timedelta(days=janela_inicial_dias)
+    try:
+        contratos = fonte_pncp.buscar_contratos(inicio, hoje)
+        vinculados = upsert_contratos(session, contratos)
+        registar_execucao(session, "pncp_contratos", inicio, hoje, len(contratos), vinculados, 0, "sucesso")
+        session.commit()
+        return vinculados
+    except Exception as exc:
+        registar_execucao(session, "pncp_contratos", inicio, hoje, 0, 0, 0, "falha", str(exc))
+        session.commit()
+        return 0
