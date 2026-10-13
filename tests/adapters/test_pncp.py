@@ -7,6 +7,7 @@ import pytest
 from app.adapters.fontes import pncp as pncp_mod
 from app.adapters.fontes.pncp import _parse_item, _d
 from app.domain.edital import Edital, Fonte
+from app.domain.contrato import Contrato, chave_compra_de_numero_controle
 
 FIX = json.loads(Path("tests/fixtures/pncp_publicacao.json").read_text(encoding="utf-8"))
 
@@ -173,3 +174,72 @@ def test_listar_arquivos_nao_marca_tudo_como_edital(monkeypatch):
 
     assert arquivos[0].tipo != pncp_mod.TipoArquivo.EDITAL
     assert arquivos[0].tipo == pncp_mod.TipoArquivo.TR
+
+
+def test_chave_compra_de_numero_controle_converte_formato():
+    assert chave_compra_de_numero_controle("13880257000127-1-000062/2026") == "13880257000127-2026-62"
+
+
+def test_chave_compra_de_numero_controle_entrada_malformada_devolve_none():
+    assert chave_compra_de_numero_controle("") is None
+    assert chave_compra_de_numero_controle("abc") is None
+    assert chave_compra_de_numero_controle(None) is None
+
+
+_CONTRATO_EXEMPLO = {
+    "numeroControlePncpCompra": "13880257000127-1-000062/2026",
+    "numeroControlePNCP": "13880257000127-2-000239/2026",
+    "orgaoEntidade": {"cnpj": "13880257000127", "razaoSocial": "MUNICIPIO DE XIQUE-XIQUE"},
+    "unidadeOrgao": {"ufSigla": "BA", "municipioNome": "Xique-Xique"},
+    "niFornecedor": "44281151000130",
+    "nomeRazaoSocialFornecedor": "MARIA FEITOZA DOS SANTOS",
+    "numeroContratoEmpenho": "219",
+    "valorInicial": 28608.0,
+    "valorGlobal": 28608.0,
+    "dataAssinatura": "2026-02-09",
+    "dataPublicacaoPncp": "2026-09-01T00:02:00",
+}
+
+
+def test_buscar_contratos_pagina_e_converte_itens(monkeypatch):
+    vistos_path = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        vistos_path.append(request.url.path)
+        return httpx.Response(200, json={"data": [_CONTRATO_EXEMPLO], "totalPaginas": 1})
+
+    monkeypatch.setattr(pncp_mod, "make_client", _client_falso(handler))
+    fonte = pncp_mod.FontePncp("http://fake")
+    out = fonte.buscar_contratos(date(2026, 9, 1), date(2026, 9, 2))
+
+    assert len(out) == 1
+    assert all(path == "/consulta/v1/contratos" for path in vistos_path)
+    c = out[0]
+    assert isinstance(c, Contrato)
+    assert c.fonte == "pncp"
+    assert c.chave_natural == "13880257000127-2-000239/2026"
+    assert c.chave_natural_compra == "13880257000127-2026-62"
+    assert c.fornecedor_nome == "MARIA FEITOZA DOS SANTOS"
+
+
+def test_buscar_contratos_pula_item_malformado_mas_mantem_os_validos(monkeypatch):
+    malformado = {**_CONTRATO_EXEMPLO, "valorInicial": "nao-e-numero-valido-" * 10}
+    malformado["valorInicial"] = "x"  # Decimal() vai levantar
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": [_CONTRATO_EXEMPLO, malformado], "totalPaginas": 1})
+
+    monkeypatch.setattr(pncp_mod, "make_client", _client_falso(handler))
+    fonte = pncp_mod.FontePncp("http://fake")
+    out = fonte.buscar_contratos(date(2026, 9, 1), date(2026, 9, 2))
+    assert len(out) == 1
+
+
+def test_buscar_contratos_levanta_se_a_chamada_falhar(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400)
+
+    monkeypatch.setattr(pncp_mod, "make_client", _client_falso(handler))
+    fonte = pncp_mod.FontePncp("http://fake")
+    with pytest.raises(httpx.HTTPStatusError):
+        fonte.buscar_contratos(date(2025, 9, 14), date(2025, 9, 15))

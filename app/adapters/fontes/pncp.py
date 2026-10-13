@@ -4,6 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from app.adapters.http_client import make_client
 from app.domain.edital import Edital, Fonte, ArquivoRef, TipoArquivo
+from app.domain.contrato import Contrato, chave_compra_de_numero_controle
 
 MODALIDADES = (6, 7, 8, 9, 12)  # confirmado: modalidadeId=8 (Dispensa) no fixture real
 TAMANHO_PAGINA = 50  # maximo aceite pelo PNCP (500 devolve 400 "Tamanho de pagina invalido")
@@ -53,6 +54,32 @@ def _parse_item(item: dict) -> Edital:
         data_fim_propostas=_d(item.get("dataEncerramentoProposta")),
         url_origem=f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{seq}",
         situacao_compra=situacao[:60] if situacao else None,
+    )
+
+
+def _parse_contrato(item: dict) -> Contrato:
+    orgao = item.get("orgaoEntidade") or {}
+    unidade = item.get("unidadeOrgao") or {}
+    cnpj = str(orgao.get("cnpj") or "")
+    numero_compra = str(item.get("numeroControlePncpCompra") or "")
+    numero_contrato_pncp = str(item.get("numeroControlePNCP") or "")
+    vi = item.get("valorInicial")
+    vg = item.get("valorGlobal")
+    return Contrato(
+        fonte="pncp",
+        chave_natural=numero_contrato_pncp,
+        chave_natural_compra=chave_compra_de_numero_controle(numero_compra) or "",
+        numero_contrato=str(item.get("numeroContratoEmpenho") or ""),
+        fornecedor_nome=str(item.get("nomeRazaoSocialFornecedor") or ""),
+        fornecedor_documento=str(item.get("niFornecedor") or ""),
+        valor_inicial=Decimal(str(vi)) if vi is not None else None,
+        valor_global=Decimal(str(vg)) if vg is not None else None,
+        data_assinatura=_d(item.get("dataAssinatura")),
+        data_publicacao=_d(item.get("dataPublicacaoPncp")),
+        orgao_nome=str(orgao.get("razaoSocial") or ""),
+        orgao_cnpj=cnpj,
+        uf=unidade.get("ufSigla"),
+        municipio=unidade.get("municipioNome"),
     )
 
 
@@ -113,6 +140,35 @@ class FontePncp:
         # ...mas se TODAS falharam, a fonte falhou — nao devolver 0 em silencio.
         if sucessos == 0 and ultimo_erro is not None:
             raise ultimo_erro
+        return out
+
+    def buscar_contratos(self, inicio: date, fim: date) -> list[Contrato]:
+        out: list[Contrato] = []
+        di, df = inicio.strftime("%Y%m%d"), fim.strftime("%Y%m%d")
+        primeira_chamada = True
+        with make_client(self._base_url) as c:
+            pagina = 1
+            while True:
+                if not primeira_chamada:
+                    time.sleep(PAUSA_ENTRE_REQUESTS)
+                primeira_chamada = False
+                r = c.get("/consulta/v1/contratos", params={
+                    "dataInicial": di, "dataFinal": df,
+                    "pagina": pagina, "tamanhoPagina": TAMANHO_PAGINA,
+                })
+                if r.status_code == 204:
+                    break
+                r.raise_for_status()
+                body = r.json()
+                itens = body.get("data") or []
+                for i in itens:
+                    try:
+                        out.append(_parse_contrato(i))
+                    except Exception:
+                        pass  # item malformado nao aborta a fonte
+                if pagina >= int(body.get("totalPaginas") or 1):
+                    break
+                pagina += 1
         return out
 
     def listar_arquivos(self, e: Edital) -> list[ArquivoRef]:

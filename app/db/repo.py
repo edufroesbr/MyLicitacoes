@@ -2,8 +2,9 @@ import hashlib
 from datetime import datetime, timezone
 from sqlalchemy import select
 from app.domain.edital import Edital, ArquivoRef
+from app.domain.contrato import Contrato
 from app.domain.relevancia import ScoreRelevancia
-from app.db.models import EditalRow, ExecucaoCapturaRow, ArquivoEditalRow
+from app.db.models import EditalRow, ExecucaoCapturaRow, ArquivoEditalRow, ContratoRow
 
 
 def upsert_editais(
@@ -49,6 +50,33 @@ def persistir_arquivo(session, edital_id: int, arq: ArquivoRef, caminho: str, co
     session.add(ArquivoEditalRow(
         edital_id=edital_id, tipo=arq.tipo.value, caminho_local=caminho,
         hash=hashlib.sha256(conteudo).hexdigest(), baixado_em=datetime.now(timezone.utc)))
+
+
+def upsert_contratos(session, contratos: list[Contrato]) -> int:
+    vinculados = 0
+    for c in contratos:
+        if not c.chave_natural_compra:
+            continue
+        edital = session.scalar(select(EditalRow).where(
+            EditalRow.fonte == c.fonte, EditalRow.chave_natural == c.chave_natural_compra))
+        if edital is None:
+            continue  # sem edital correspondente na base - descarta, nao e erro
+        row = session.scalar(select(ContratoRow).where(
+            ContratoRow.fonte == c.fonte, ContratoRow.chave_natural == c.chave_natural))
+        if row is None:
+            row = ContratoRow(
+                fonte=c.fonte, chave_natural=c.chave_natural, edital_id=edital.id,
+                numero_contrato=c.numero_contrato, fornecedor_nome=c.fornecedor_nome,
+                fornecedor_documento=c.fornecedor_documento, valor_inicial=c.valor_inicial,
+                valor_global=c.valor_global, data_assinatura=c.data_assinatura,
+                data_publicacao=c.data_publicacao, capturado_em=datetime.now(timezone.utc))
+            session.add(row)
+        else:
+            row.valor_inicial = c.valor_inicial
+            row.valor_global = c.valor_global
+            row.data_assinatura = c.data_assinatura
+        vinculados += 1
+    return vinculados
 
 
 def registar_execucao(session, fonte, inicio, fim, lidos, novos, relevantes, status, erro="", iniciado=None, terminado=None):
